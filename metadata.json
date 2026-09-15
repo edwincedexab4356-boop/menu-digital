@@ -1,0 +1,7 @@
+{
+  "name": "Menú Digital",
+  "description": "Menú digital moderno para restaurante con entradas, platos fuertes, postres y visualización interactiva de platillos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
