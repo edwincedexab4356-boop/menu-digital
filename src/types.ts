@@ -12,16 +12,17 @@ export type DietaryTag =
 export interface MenuItem {
   id: string;
   name: string;
-  category: 'entradas' | 'platos_fuertes' | 'postres';
+  category: 'entradas' | 'platos_fuertes' | 'postres' | string;
   description: string;
-  longDescription: string;
+  longDescription?: string;
   price: number;
-  image: string;
-  prepTime: string;
+  image?: string;
+  available: boolean;
+  prepTime?: string;
   calories?: number;
-  rating: number;
-  reviewCount: number;
-  tags: DietaryTag[];
+  rating?: number;
+  reviewCount?: number;
+  tags: (DietaryTag | string)[];
   ingredients: string[];
   allergens?: string[];
   winePairing?: string;

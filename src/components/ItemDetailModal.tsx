@@ -80,20 +80,40 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
         {/* Scrollable Modal Content */}
         <div className="overflow-y-auto flex-1">
-          {/* Top Hero Photo */}
-          <div className="relative aspect-[16/10] sm:aspect-[21/10] w-full bg-stone-100">
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-full h-full object-cover object-center"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          {/* Top Hero Photo or Fallback */}
+          <div className="relative aspect-[16/10] sm:aspect-[21/10] w-full bg-stone-100 flex items-center justify-center">
+            {item.image ? (
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full h-full object-cover object-center"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-6 text-stone-400">
+                <Utensils className="w-16 h-16 mb-2 opacity-50" />
+                <span className="text-xs uppercase font-bold tracking-wider text-stone-400">Delicias Belgi</span>
+              </div>
+            )}
+            {item.image && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            )}
 
             {/* Badges on Photo */}
             <div className="absolute bottom-3 left-4 right-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {item.tags.map((tag) => (
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {/* Estado disponible / no disponible */}
+                <span
+                  className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-xs font-bold shadow-xs ${
+                    item.available
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-stone-800 text-stone-300'
+                  }`}
+                >
+                  {item.available ? 'Disponible' : 'No disponible'}
+                </span>
+
+                {item.tags?.map((tag) => (
                   <span
                     key={tag}
                     className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-xs font-bold bg-white text-stone-900 shadow-xs"
@@ -102,11 +122,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   </span>
                 ))}
               </div>
-              <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-xs bg-[#1c1917]/90 text-white text-xs font-bold border border-stone-700">
-                <Star className="w-3.5 h-3.5 fill-[#d97706] text-[#d97706]" />
-                <span>{item.rating}</span>
-                <span className="text-stone-300 font-normal">({item.reviewCount} valoraciones)</span>
-              </div>
+              {item.rating && (
+                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-xs bg-[#1c1917]/90 text-white text-xs font-bold border border-stone-700">
+                  <Star className="w-3.5 h-3.5 fill-[#d97706] text-[#d97706]" />
+                  <span>{item.rating}</span>
+                  {item.reviewCount && (
+                    <span className="text-stone-300 font-normal">({item.reviewCount} valoraciones)</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -115,18 +139,36 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             {/* Title & Price */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-stone-200 pb-5">
               <div>
-                <span className="text-[11px] uppercase tracking-widest text-[#a83b24] font-bold mb-1 block">
-                  {item.category === 'entradas' ? 'Entrada de Autor' : item.category === 'platos_fuertes' ? 'Plato Fuerte Principal' : 'Postre Artesanal'}
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] uppercase tracking-widest text-[#a83b24] font-bold block">
+                    {item.category === 'entradas'
+                      ? 'Entrada de Autor'
+                      : item.category === 'platos_fuertes'
+                      ? 'Plato Fuerte Principal'
+                      : item.category === 'postres'
+                      ? 'Postre Artesanal'
+                      : item.category.toUpperCase()}
+                  </span>
+                  <span className="text-stone-300 text-xs">•</span>
+                  <span
+                    className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.2 rounded-xs border ${
+                      item.available
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : 'bg-stone-100 text-stone-600 border-stone-300'
+                    }`}
+                  >
+                    {item.available ? 'Disponible' : 'No disponible'}
+                  </span>
+                </div>
                 <h2 className="font-serif-title text-2xl sm:text-3xl font-bold text-stone-900 leading-tight">
                   {item.name}
                 </h2>
               </div>
               <div className="sm:text-right shrink-0">
                 <span className="text-2xl sm:text-3xl font-bold text-stone-900 block tracking-tight">
-                  {currency}{item.price.toFixed(2)}
+                  {currency}{item.price.toFixed(2)} USD
                 </span>
-                <span className="text-[11px] text-stone-500 font-normal">Impuestos y servicio incluidos</span>
+                <span className="text-[11px] text-stone-500 font-normal">Impuestos incluidos</span>
               </div>
             </div>
 
@@ -255,13 +297,18 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <button
             id="modal-add-to-cart-btn"
             onClick={handleAdd}
-            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-5 rounded-sm font-semibold uppercase tracking-wider text-xs sm:text-sm transition-all shadow-xs cursor-pointer ${
-              addedEffect
-                ? 'bg-emerald-700 text-white scale-98'
-                : 'bg-[#a83b24] hover:bg-[#91321d] text-white active:scale-98'
+            disabled={!item.available}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-5 rounded-sm font-semibold uppercase tracking-wider text-xs sm:text-sm transition-all shadow-xs ${
+              !item.available
+                ? 'bg-stone-200 text-stone-500 cursor-not-allowed'
+                : addedEffect
+                ? 'bg-emerald-700 text-white scale-98 cursor-pointer'
+                : 'bg-[#a83b24] hover:bg-[#91321d] text-white active:scale-98 cursor-pointer'
             }`}
           >
-            {addedEffect ? (
+            {!item.available ? (
+              <span>Platillo No Disponible</span>
+            ) : addedEffect ? (
               <>
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>¡Agregado a la comanda!</span>
@@ -270,7 +317,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <>
                 <span>Añadir a mi Comanda</span>
                 <span className="opacity-60">•</span>
-                <span>{currency}{(item.price * quantity).toFixed(2)}</span>
+                <span>{currency}{(item.price * quantity).toFixed(2)} USD</span>
               </>
             )}
           </button>

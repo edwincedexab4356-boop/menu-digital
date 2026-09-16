@@ -7,9 +7,10 @@ import { ItemDetailModal } from './components/ItemDetailModal';
 import { OrderDrawer } from './components/OrderDrawer';
 import { RestaurantInfoModal } from './components/RestaurantInfoModal';
 import { TableSelectorModal } from './components/TableSelectorModal';
-import { menuItems, restaurantInfo } from './data/menuData';
+import { restaurantInfo } from './data/menuData';
+import { useFirestoreProducts } from './services/firestoreMenu';
 import { MenuCategory, MenuItem, CartItem, DietaryTag } from './types';
-import { ShoppingBag, ArrowRight, Salad, Flame, CakeSlice, Utensils, Sparkles } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Salad, Flame, CakeSlice, Utensils, Sparkles, Database, Loader2, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState<MenuCategory>('todas');
@@ -17,11 +18,32 @@ export default function App() {
   const [selectedTag, setSelectedTag] = useState<DietaryTag | 'todos'>('todos');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+
+  // Firestore real-time data
+  const {
+    products: firestoreProducts,
+    loading: isFirestoreLoading,
+    error: firestoreError,
+    firestoreCount,
+    isFirestoreConnected,
+    seedSampleProducts,
+    defaultFallbackItems,
+  } = useFirestoreProducts();
+
+  // If Firestore has documents, use them exclusively; otherwise use default fallback items
+  const currentMenuItems = useMemo(() => {
+    if (firestoreProducts && firestoreProducts.length > 0) {
+      return firestoreProducts;
+    }
+    return defaultFallbackItems;
+  }, [firestoreProducts, defaultFallbackItems]);
+
+  const isUsingRealFirestoreDocs = firestoreProducts.length > 0;
   
   // Cart / Order state
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('aura_cart');
+      const saved = localStorage.getItem('delicias_belgi_cart');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -30,7 +52,7 @@ export default function App() {
 
   const [tableNumber, setTableNumber] = useState<string>(() => {
     try {
-      return localStorage.getItem('aura_table') || 'Mesa 04';
+      return localStorage.getItem('delicias_belgi_table') || 'Mesa 04';
     } catch {
       return 'Mesa 04';
     }
@@ -39,11 +61,12 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Sync cart to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('aura_cart', JSON.stringify(cart));
+      localStorage.setItem('delicias_belgi_cart', JSON.stringify(cart));
     } catch {
       // ignore
     }
@@ -52,25 +75,51 @@ export default function App() {
   // Sync table to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('aura_table', tableNumber);
+      localStorage.setItem('delicias_belgi_table', tableNumber);
     } catch {
       // ignore
     }
   }, [tableNumber]);
 
+  // Handle seeding sample dishes into Firestore
+  const handleSeedProducts = async () => {
+    setIsSeeding(true);
+    await seedSampleProducts();
+    setIsSeeding(false);
+  };
+
+  // Find all distinct categories present in menu items
+  const extraCategories = useMemo(() => {
+    const standard: string[] = ['entradas', 'platos_fuertes', 'postres'];
+    const allCategories: string[] = currentMenuItems.map((i) => i.category);
+    return Array.from(new Set<string>(allCategories)).filter(
+      (c: string) => !standard.includes(c)
+    );
+  }, [currentMenuItems]);
+
   // Counts for each category
   const categoryCounts = useMemo(() => {
-    return {
-      todas: menuItems.length,
-      entradas: menuItems.filter((i) => i.category === 'entradas').length,
-      platos_fuertes: menuItems.filter((i) => i.category === 'platos_fuertes').length,
-      postres: menuItems.filter((i) => i.category === 'postres').length,
+    const counts: Record<string, number> = {
+      todas: currentMenuItems.length,
+      entradas: 0,
+      platos_fuertes: 0,
+      postres: 0,
     };
-  }, []);
+    for (const item of currentMenuItems) {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+    }
+    return counts as {
+      todas: number;
+      entradas: number;
+      platos_fuertes: number;
+      postres: number;
+      [key: string]: number;
+    };
+  }, [currentMenuItems]);
 
   // Filtered menu items
   const filteredItems = useMemo(() => {
-    return menuItems.filter((item) => {
+    return currentMenuItems.filter((item) => {
       // Category filter
       if (activeCategory !== 'todas' && item.category !== activeCategory) {
         return false;
@@ -86,7 +135,7 @@ export default function App() {
         const query = searchQuery.toLowerCase().trim();
         const matchesName = item.name.toLowerCase().includes(query);
         const matchesDesc = item.description.toLowerCase().includes(query);
-        const matchesIngredient = item.ingredients.some((ing) =>
+        const matchesIngredient = item.ingredients?.some((ing) =>
           ing.toLowerCase().includes(query)
         );
         if (!matchesName && !matchesDesc && !matchesIngredient) {
@@ -96,7 +145,7 @@ export default function App() {
 
       return true;
     });
-  }, [activeCategory, selectedTag, searchQuery]);
+  }, [currentMenuItems, activeCategory, selectedTag, searchQuery]);
 
   // Grouped items when 'todas' is selected
   const entradasItems = useMemo(
@@ -114,6 +163,7 @@ export default function App() {
 
   // Add to cart handler
   const handleAddToCart = (item: MenuItem, quantity = 1, instructions?: string) => {
+    if (!item.available) return;
     setCart((prev) => {
       const existingIndex = prev.findIndex((ci) => ci.item.id === item.id);
       if (existingIndex > -1) {
@@ -181,6 +231,7 @@ export default function App() {
           activeCategory={activeCategory}
           onSelectCategory={(cat) => setActiveCategory(cat)}
           categoryCounts={categoryCounts}
+          extraCategories={extraCategories}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedTag={selectedTag}
@@ -192,7 +243,50 @@ export default function App() {
 
       {/* Main Menu Feed */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {filteredItems.length === 0 ? (
+        {/* Firestore Sync Indicator Bar (Subtle & Elegant) */}
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 p-3 sm:px-4 rounded-sm bg-white border border-stone-200 shadow-xs text-xs">
+          <div className="flex items-center space-x-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isFirestoreConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isFirestoreConnected ? 'bg-emerald-600' : 'bg-amber-500'}`}></span>
+            </span>
+            <span className="font-semibold text-stone-800">
+              {isFirestoreLoading
+                ? 'Conectando a Cloud Firestore...'
+                : isUsingRealFirestoreDocs
+                ? `Cloud Firestore Conectado · ${firestoreProducts.length} productos en vivo desde 'productos'`
+                : `Cloud Firestore Conectado · Colección 'productos' lista`}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3 text-stone-500">
+            {firestoreProducts.length === 0 && !isFirestoreLoading && (
+              <button
+                onClick={handleSeedProducts}
+                disabled={isSeeding}
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xs bg-stone-100 hover:bg-stone-200 text-stone-800 font-medium transition-colors cursor-pointer border border-stone-300"
+                title="Cargar los platillos de muestra directamente en Firestore"
+              >
+                {isSeeding ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Database className="w-3.5 h-3.5 text-[#a83b24]" />
+                )}
+                <span>{isSeeding ? 'Sincronizando...' : 'Cargar platillos muestra a Firestore'}</span>
+              </button>
+            )}
+            <span className="text-[11px] text-stone-400">Precios en USD</span>
+          </div>
+        </div>
+
+        {isFirestoreLoading && currentMenuItems.length === 0 ? (
+          /* Loading Skeleton */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="h-80 bg-stone-200/60 rounded-sm border border-stone-200" />
+            ))}
+          </div>
+        ) : filteredItems.length === 0 ? (
           /* Empty Results State */
           <div className="text-center py-16 px-4 bg-white rounded-sm border border-stone-200 my-8 shadow-xs">
             <div className="w-16 h-16 rounded-xs bg-stone-100 flex items-center justify-center mx-auto mb-4 text-stone-400 border border-stone-200">
@@ -232,7 +326,7 @@ export default function App() {
                     </h2>
                   </div>
                   <span className="text-xs sm:text-sm text-stone-500 font-medium">
-                    {entradasItems.length} platillos elaborados al momento
+                    {entradasItems.length} {entradasItems.length === 1 ? 'platillo' : 'platillos'}
                   </span>
                 </div>
 
@@ -273,7 +367,7 @@ export default function App() {
                     </h2>
                   </div>
                   <span className="text-xs sm:text-sm text-stone-500 font-medium">
-                    {platosFuertesItems.length} creaciones exclusivas
+                    {platosFuertesItems.length} {platosFuertesItems.length === 1 ? 'creación' : 'creaciones'}
                   </span>
                 </div>
 
@@ -314,7 +408,7 @@ export default function App() {
                     </h2>
                   </div>
                   <span className="text-xs sm:text-sm text-stone-500 font-medium">
-                    {postresItems.length} delicias dulces
+                    {postresItems.length} {postresItems.length === 1 ? 'delicia dulce' : 'delicias dulces'}
                   </span>
                 </div>
 
@@ -338,6 +432,51 @@ export default function App() {
                 </div>
               </section>
             )}
+
+            {/* 4. SECCIONES ADICIONALES (Categorías personalizadas desde Firestore) */}
+            {extraCategories.map((cat) => {
+              const catItems = filteredItems.filter((i) => i.category === cat);
+              if (catItems.length === 0) return null;
+              return (
+                <section key={cat} id={`section-${cat}`} className="scroll-mt-40">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 pb-3 border-b border-stone-300 gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Utensils className="w-4 h-4 text-[#a83b24]" />
+                        <span className="text-[11px] uppercase tracking-widest text-[#a83b24] font-bold">
+                          Colección Delicias Belgi
+                        </span>
+                      </div>
+                      <h2 className="font-serif-title text-2xl sm:text-3xl font-bold text-stone-900">
+                        {cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
+                      </h2>
+                    </div>
+                    <span className="text-xs sm:text-sm text-stone-500 font-medium">
+                      {catItems.length} {catItems.length === 1 ? 'producto' : 'productos'}
+                    </span>
+                  </div>
+
+                  <div
+                    className={
+                      viewMode === 'grid'
+                        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+                        : 'space-y-4'
+                    }
+                  >
+                    {catItems.map((item) => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        currency={restaurantInfo.currency}
+                        onSelect={(dish) => setSelectedItem(dish)}
+                        onAddToCart={(dish) => handleAddToCart(dish, 1)}
+                        viewMode={viewMode}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         ) : (
           /* Single Category or Filtered View */
@@ -347,15 +486,20 @@ export default function App() {
                 {activeCategory === 'entradas' && <Salad className="w-6 h-6 text-[#a83b24]" />}
                 {activeCategory === 'platos_fuertes' && <Flame className="w-6 h-6 text-[#a83b24]" />}
                 {activeCategory === 'postres' && <CakeSlice className="w-6 h-6 text-[#a83b24]" />}
+                {activeCategory !== 'entradas' && activeCategory !== 'platos_fuertes' && activeCategory !== 'postres' && (
+                  <Utensils className="w-6 h-6 text-[#a83b24]" />
+                )}
                 <h2 className="font-serif-title text-2xl sm:text-3xl font-bold text-stone-900">
                   {activeCategory === 'entradas' && 'Entradas de Autor'}
                   {activeCategory === 'platos_fuertes' && 'Platos Fuertes & Brasas'}
                   {activeCategory === 'postres' && 'Postres Artesanales'}
                   {activeCategory === 'todas' && 'Resultados de Búsqueda'}
+                  {!['entradas', 'platos_fuertes', 'postres', 'todas'].includes(activeCategory) &&
+                    activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1).replace('_', ' ')}
                 </h2>
               </div>
               <span className="text-xs sm:text-sm text-stone-500 font-medium">
-                {filteredItems.length} platillos encontrados
+                {filteredItems.length} {filteredItems.length === 1 ? 'platillo encontrado' : 'platillos encontrados'}
               </span>
             </div>
 
@@ -403,7 +547,7 @@ export default function App() {
             </div>
 
             <div className="flex items-center space-x-2 font-bold text-base">
-              <span className="text-[#a83b24]">{restaurantInfo.currency}{totalCartPrice.toFixed(2)}</span>
+              <span className="text-[#a83b24]">{restaurantInfo.currency}{totalCartPrice.toFixed(2)} USD</span>
               <ArrowRight className="w-4 h-4 text-stone-400" />
             </div>
           </div>
@@ -441,7 +585,7 @@ export default function App() {
           </div>
 
           <div className="text-xs text-stone-400">
-            <p>© {new Date().getFullYear()} {restaurantInfo.name}. Menú digital de alta gastronomía.</p>
+            <p>© {new Date().getFullYear()} {restaurantInfo.name}. Menú digital conectado a Cloud Firestore.</p>
           </div>
         </div>
       </footer>

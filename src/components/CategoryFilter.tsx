@@ -25,7 +25,9 @@ interface CategoryFilterProps {
     entradas: number;
     platos_fuertes: number;
     postres: number;
+    [key: string]: number;
   };
+  extraCategories?: string[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedTag: DietaryTag | 'todos';
@@ -38,6 +40,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   activeCategory,
   onSelectCategory,
   categoryCounts,
+  extraCategories = [],
   searchQuery,
   onSearchChange,
   selectedTag,
@@ -45,12 +48,23 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   viewMode,
   onToggleViewMode,
 }) => {
-  const categories: { id: MenuCategory; label: string; count: number; icon: React.ReactNode }[] = [
-    { id: 'todas', label: 'Toda la Carta', count: categoryCounts.todas, icon: <Utensils className="w-4 h-4" /> },
-    { id: 'entradas', label: 'Entradas', count: categoryCounts.entradas, icon: <Salad className="w-4 h-4" /> },
-    { id: 'platos_fuertes', label: 'Platos Fuertes', count: categoryCounts.platos_fuertes, icon: <Flame className="w-4 h-4" /> },
-    { id: 'postres', label: 'Postres', count: categoryCounts.postres, icon: <CakeSlice className="w-4 h-4" /> },
+  const baseCategories: { id: MenuCategory; label: string; count: number; icon: React.ReactNode }[] = [
+    { id: 'todas', label: 'Toda la Carta', count: categoryCounts.todas || 0, icon: <Utensils className="w-4 h-4" /> },
+    { id: 'entradas', label: 'Entradas', count: categoryCounts.entradas || 0, icon: <Salad className="w-4 h-4" /> },
+    { id: 'platos_fuertes', label: 'Platos Fuertes', count: categoryCounts.platos_fuertes || 0, icon: <Flame className="w-4 h-4" /> },
+    { id: 'postres', label: 'Postres', count: categoryCounts.postres || 0, icon: <CakeSlice className="w-4 h-4" /> },
   ];
+
+  const additionalCats = extraCategories
+    .filter((cat) => !['todas', 'entradas', 'platos_fuertes', 'postres'].includes(cat))
+    .map((cat) => ({
+      id: cat,
+      label: cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' '),
+      count: categoryCounts[cat] || 0,
+      icon: <Utensils className="w-4 h-4" />,
+    }));
+
+  const categories = [...baseCategories, ...additionalCats];
 
   const dietaryTags: { id: DietaryTag | 'todos'; label: string; icon: React.ReactNode }[] = [
     { id: 'todos', label: 'Todos', icon: <SlidersHorizontal className="w-3 h-3" /> },

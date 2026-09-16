@@ -1,7 +1,7 @@
 import { MenuItem, RestaurantData } from '../types';
 
 export const restaurantInfo: RestaurantData = {
-  name: "Aura Bistró & Brasa",
+  name: "Delicias Belgi",
   subtitle: "Cocina contemporánea & brasas de autor",
   description: "Una experiencia culinaria que celebra el producto fresco de temporada, las técnicas a la brasa y una cuidada selección de maridajes.",
   rating: 4.9,
@@ -13,7 +13,7 @@ export const restaurantInfo: RestaurantData = {
   currency: "$"
 };
 
-export const menuItems: MenuItem[] = [
+const rawMenuItems: Omit<MenuItem, 'available'>[] = [
   // ================= ENTRADAS =================
   {
     id: "ent-1",
@@ -344,3 +344,8 @@ export const menuItems: MenuItem[] = [
     portionSize: "5 churros + 2 salsas"
   }
 ];
+
+export const menuItems: MenuItem[] = rawMenuItems.map((item) => ({
+  ...item,
+  available: true,
+}));
