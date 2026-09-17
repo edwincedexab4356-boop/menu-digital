@@ -59,7 +59,7 @@ export function useAdminAuth() {
       } else {
         // User is authenticated in Firebase Auth, but does not have admin role in Firestore
         setIsAdmin(false);
-        setError('Permisos insuficientes: el usuario no tiene rol de administrador.');
+        setError(`Permisos insuficientes: El usuario (${firebaseUser.email || firebaseUser.uid}) no tiene rol de administrador. Verifica que exista el documento "admin/${firebaseUser.uid}" con el campo rol: "admin" en Cloud Firestore.`);
         await signOut(auth);
         setUser(null);
         setCheckingRole(false);
@@ -68,7 +68,8 @@ export function useAdminAuth() {
     } catch (err: any) {
       console.error('Error verifying admin document:', err);
       setIsAdmin(false);
-      setError(err?.message || 'Error al comprobar permisos de administrador.');
+      const code = err?.code ? ` (${err.code})` : '';
+      setError(`Error al consultar Firestore en "admin/${firebaseUser.uid}"${code}: ${err?.message || 'Error de permisos o conexión.'}`);
       await signOut(auth);
       setUser(null);
       setCheckingRole(false);
@@ -106,22 +107,31 @@ export function useAdminAuth() {
       return hasAdminRole;
     } catch (err: any) {
       console.error('Login error:', err);
-      let friendlyMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+      // Extract the real Firebase error code and message
+      const errorCode = err.code || 'unknown-error';
+      const rawMessage = err.message || '';
+      
+      let friendlyMessage = `Error de Firebase (${errorCode}): ${rawMessage}`;
+      
       if (
-        err.code === 'auth/invalid-credential' || 
-        err.code === 'auth/invalid-login-credentials' ||
-        err.code === 'auth/wrong-password' || 
-        err.code === 'auth/user-not-found'
+        errorCode === 'auth/invalid-credential' || 
+        errorCode === 'auth/invalid-login-credentials' ||
+        errorCode === 'auth/wrong-password' || 
+        errorCode === 'auth/user-not-found'
       ) {
-        friendlyMessage = 'Credenciales incorrectas: correo o contraseña incorrectos.';
-      } else if (err.code === 'auth/user-disabled') {
-        friendlyMessage = 'Esta cuenta de usuario ha sido deshabilitada.';
-      } else if (err.code === 'auth/invalid-email') {
-        friendlyMessage = 'El formato del correo electrónico no es válido.';
-      } else if (err.code === 'auth/too-many-requests') {
-        friendlyMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
-      } else if (err.message) {
-        friendlyMessage = err.message;
+        friendlyMessage = `Credenciales incorrectas (${errorCode}): Verifica que el correo y la contraseña coincidan exactamente con el usuario registrado en Firebase Auth.`;
+      } else if (errorCode === 'auth/user-disabled') {
+        friendlyMessage = `Usuario deshabilitado (${errorCode}): La cuenta de este administrador ha sido suspendida en la consola de Firebase.`;
+      } else if (errorCode === 'auth/invalid-email') {
+        friendlyMessage = `Correo no válido (${errorCode}): El formato del correo electrónico ingresado no es válido.`;
+      } else if (errorCode === 'auth/too-many-requests') {
+        friendlyMessage = `Bloqueo temporal (${errorCode}): Demasiados intentos fallidos consecutivos. Espera unos minutos antes de reintentar.`;
+      } else if (errorCode === 'auth/network-request-failed') {
+        friendlyMessage = `Error de red (${errorCode}): No se pudo establecer conexión con Firebase. Verifica tu conexión a internet.`;
+      } else if (errorCode === 'auth/operation-not-allowed') {
+        friendlyMessage = `Proveedor no habilitado (${errorCode}): El método Email/Password no está habilitado en Firebase Authentication (Authentication > Sign-in method).`;
+      } else if (errorCode === 'auth/unauthorized-domain') {
+        friendlyMessage = `Dominio no autorizado (${errorCode}): El dominio de esta aplicación no está en la lista de dominios autorizados en Firebase Authentication.`;
       }
       setError(friendlyMessage);
       setIsAdmin(false);
