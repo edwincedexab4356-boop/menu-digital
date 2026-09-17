@@ -51,32 +51,30 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
   const tipAmount = (subtotal * tipPercentage) / 100;
   const total = subtotal + tipAmount;
 
-const handleSendOrder = async () => {
-  try {
-    if (cartItems.length === 0) return;
+  const handleSendOrder = async () => {
+    try {
+      if (cartItems.length === 0) return;
 
-    const orderItems = cartItems.map((ci) => ({
-      id: ci.item.id,
-      name: ci.item.name,
-      price: ci.item.price,
-      quantity: ci.quantity,
-    }));
+      const orderItems = cartItems.map((ci) => ({
+        id: ci.item.id,
+        name: ci.item.name,
+        price: ci.item.price,
+        quantity: ci.quantity,
+      }));
 
-    const orderTotal = total;
+      const orderTotal = total;
 
-    const orderId = await createOrder(orderItems, orderTotal);
+      const orderId = await createOrder(orderItems, orderTotal);
 
-    setOrderTicketNumber(orderId);
-    setOrderSent(true);
+      setOrderTicketNumber(orderId);
+      setOrderSent(true);
 
-    console.log('Pedido enviado correctamente:', orderId);
-  } catch (error) {
-    console.error('No se pudo enviar el pedido:', error);
-    alert('No se pudo enviar el pedido. Intenta nuevamente.');
-  }
-};
-```
-
+      console.log('Pedido enviado correctamente:', orderId);
+    } catch (error) {
+      console.error('No se pudo enviar el pedido:', error);
+      alert('No se pudo enviar el pedido. Intenta nuevamente.');
+    }
+  };
 
   const handleShareWhatsApp = () => {
     let text = `*Pedido Digital - ${restaurant.name}*\n`;
@@ -148,7 +146,7 @@ const handleSendOrder = async () => {
                 Ticket Confirmado #{orderTicketNumber}
               </span>
               <h3 className="font-serif-title text-2xl font-bold text-stone-900 mt-1">
-                Comanda Enviada a Cocina
+                Enviado
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-xs mx-auto leading-relaxed">
                 Su comanda ha sido asignada para <strong className="text-stone-900">{orderType === 'mesa' ? tableNumber : 'Para Llevar'}</strong>. Nuestro equipo de cocina la está preparando.
