@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Sale, MetodoPago } from '../../types/finance';
 import { MenuItem } from '../../types';
-import { deleteSale } from '../../services/adminFinance';
+import { DeleteSaleModal } from './DeleteSaleModal';
 
 interface SalesViewProps {
   sales: Sale[];
@@ -28,6 +28,7 @@ interface SalesViewProps {
   onOpenNewSale: () => void;
   onEditSale: (sale: Sale) => void;
   onShowToast: (msg: string, type?: 'success' | 'error') => void;
+  onSaleDeleted?: (saleId: string) => void;
 }
 
 export const SalesView: React.FC<SalesViewProps> = ({
@@ -36,6 +37,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onOpenNewSale,
   onEditSale,
   onShowToast,
+  onSaleDeleted,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<'todos' | 'hoy' | 'semana' | 'mes' | 'custom'>('todos');
@@ -43,30 +45,41 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [endDate, setEndDate] = useState('');
   const [methodFilter, setMethodFilter] = useState<string>('todos');
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
 
   // Helper date calculations
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const getLocalDateStr = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayLocalStr = getLocalDateStr(now);
+  const todayUtcStr = now.toISOString().split('T')[0];
   
   // Start of week (Monday)
   const dayOfWeek = now.getDay() || 7;
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - dayOfWeek + 1);
-  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+  const startOfWeekStr = getLocalDateStr(startOfWeek);
 
   // Start of month
-  const startOfMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const currentYear = now.getFullYear();
+  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
+  const monthPrefix = `${currentYear}-${currentMonthStr}`;
+
+  const isToday = (fecha: string) => fecha === todayLocalStr || fecha === todayUtcStr;
 
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => {
       // Date filter
       if (dateFilter === 'hoy') {
-        if (sale.fecha !== todayStr) return false;
+        if (!isToday(sale.fecha)) return false;
       } else if (dateFilter === 'semana') {
-        if (sale.fecha < startOfWeekStr || sale.fecha > todayStr) return false;
+        if (sale.fecha < startOfWeekStr) return false;
       } else if (dateFilter === 'mes') {
-        if (sale.fecha < startOfMonthStr || sale.fecha > todayStr) return false;
+        if (!sale.fecha.startsWith(monthPrefix)) return false;
       } else if (dateFilter === 'custom') {
         if (startDate && sale.fecha < startDate) return false;
         if (endDate && sale.fecha > endDate) return false;
@@ -93,31 +106,21 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
       return true;
     });
-  }, [sales, dateFilter, startDate, endDate, methodFilter, searchQuery, todayStr, startOfWeekStr, startOfMonthStr]);
+  }, [sales, dateFilter, startDate, endDate, methodFilter, searchQuery, todayLocalStr, todayUtcStr, startOfWeekStr, monthPrefix]);
 
   const totalFiltrado = useMemo(() => {
     return filteredSales.reduce((acc, s) => acc + s.total, 0);
   }, [filteredSales]);
 
   const totalProductosVendidos = useMemo(() => {
-    return filteredSales.reduce((acc, s) => acc + s.items.reduce((sum, item) => sum + item.cantidad, 0), 0);
+    return filteredSales.reduce((acc, s) => {
+      if (Array.isArray(s.items) && s.items.length > 0) {
+        return acc + s.items.reduce((sum, item) => sum + (Number(item.cantidad) || 1), 0);
+      }
+      return acc + (s.total > 0 ? 1 : 0);
+    }, 0);
   }, [filteredSales]);
 
-  const handleDelete = async (saleId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro de venta? Esta acción no se puede deshacer.')) {
-      return;
-    }
-    setDeletingId(saleId);
-    try {
-      await deleteSale(saleId);
-      onShowToast('Venta eliminada de Firestore.', 'success');
-    } catch (err: any) {
-      console.error('Error al eliminar venta:', err);
-      onShowToast(err?.message || 'Error al eliminar venta.', 'error');
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const getMethodBadge = (metodo: MetodoPago) => {
     switch (metodo) {
@@ -136,7 +139,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       case 'transferencia':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
-            📱 Transferencia
+            🏦 Transferencia
           </span>
         );
       default:
@@ -167,7 +170,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 Historial de Ventas
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#a83b24]/10 text-[#a83b24] border border-[#a83b24]/20">
-                {filteredSales.length} transacciones
+                {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
               </span>
             </div>
             <p className="text-xs text-stone-500 mt-1">
@@ -185,29 +188,52 @@ export const SalesView: React.FC<SalesViewProps> = ({
         </div>
 
         {/* Quick summary strip for the active filter */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-stone-100">
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-stone-100">
           <div className="p-3 bg-stone-50 rounded-xs border border-stone-200">
             <span className="text-[11px] uppercase tracking-wider text-stone-500 font-semibold block">
-              Total Ventas Filtradas
+              Total de Ventas
+            </span>
+            <span className="font-serif-title text-xl font-bold text-stone-900">
+              {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
+            </span>
+            <span className="text-[10px] text-stone-400 block mt-0.5">
+              {sales.length} en total en el sistema
+            </span>
+          </div>
+
+          <div className="p-3 bg-stone-50 rounded-xs border border-stone-200">
+            <span className="text-[11px] uppercase tracking-wider text-stone-500 font-semibold block">
+              Monto Recaudado
             </span>
             <span className="font-serif-title text-xl font-bold text-[#a83b24]">
               ${totalFiltrado.toFixed(2)} USD
             </span>
+            <span className="text-[10px] text-stone-400 block mt-0.5">
+              En el filtro seleccionado
+            </span>
           </div>
+
           <div className="p-3 bg-stone-50 rounded-xs border border-stone-200">
             <span className="text-[11px] uppercase tracking-wider text-stone-500 font-semibold block">
               Total Platillos Vendidos
             </span>
             <span className="font-serif-title text-xl font-bold text-stone-800">
-              {totalProductosVendidos} unidades
+              {totalProductosVendidos} {totalProductosVendidos === 1 ? 'platillo' : 'platillos'}
+            </span>
+            <span className="text-[10px] text-stone-400 block mt-0.5">
+              Unidades consumidas
             </span>
           </div>
+
           <div className="p-3 bg-stone-50 rounded-xs border border-stone-200">
             <span className="text-[11px] uppercase tracking-wider text-stone-500 font-semibold block">
               Ticket Promedio
             </span>
             <span className="font-serif-title text-xl font-bold text-stone-800">
               ${filteredSales.length > 0 ? (totalFiltrado / filteredSales.length).toFixed(2) : '0.00'} USD
+            </span>
+            <span className="text-[10px] text-stone-400 block mt-0.5">
+              Gasto promedio por venta
             </span>
           </div>
         </div>
@@ -257,7 +283,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
               <option value="todos">💳 Todos los métodos</option>
               <option value="efectivo">💵 Efectivo</option>
               <option value="tarjeta">💳 Tarjeta</option>
-              <option value="transferencia">📱 Transferencia</option>
+              <option value="transferencia">🏦 Transferencia</option>
               <option value="otro">Otro</option>
             </select>
           </div>
@@ -396,8 +422,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDelete(sale.id)}
-                              disabled={deletingId === sale.id}
+                              onClick={() => setSaleToDelete(sale)}
                               className="p-1.5 rounded-xs border border-red-200 hover:border-red-300 bg-red-50 text-red-700 transition-colors cursor-pointer"
                               title="Eliminar Venta"
                             >
@@ -492,8 +517,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(sale.id)}
-                    className="px-3 py-1 border border-red-200 rounded-xs text-xs font-semibold text-red-600 bg-red-50/50"
+                    onClick={() => setSaleToDelete(sale)}
+                    className="px-3 py-1 border border-red-200 rounded-xs text-xs font-semibold text-red-600 bg-red-50/50 hover:bg-red-100 transition-colors cursor-pointer"
                   >
                     Eliminar
                   </button>
@@ -502,6 +527,16 @@ export const SalesView: React.FC<SalesViewProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Modal para confirmar eliminación con código de seguridad 0000 */}
+      {saleToDelete && (
+        <DeleteSaleModal
+          sale={saleToDelete}
+          onClose={() => setSaleToDelete(null)}
+          onSuccess={(msg) => onShowToast(msg, 'success')}
+          onSaleDeleted={onSaleDeleted}
+        />
       )}
     </div>
   );

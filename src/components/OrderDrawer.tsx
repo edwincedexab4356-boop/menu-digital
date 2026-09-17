@@ -6,7 +6,6 @@ import {
   Minus, 
   Send, 
   CheckCircle2, 
-  Share2, 
   UtensilsCrossed,
   MapPin,
   FileText
@@ -76,29 +75,10 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
     }
   };
 
-  const handleShareWhatsApp = () => {
-    let text = `*Pedido Digital - ${restaurant.name}*\n`;
-    text += `*Modalidad:* ${orderType === 'mesa' ? tableNumber : 'Para Llevar'}\n`;
-    text += `*Ciudad:* Panamá\n`;
-    text += `---------------------------------\n`;
-    cartItems.forEach(ci => {
-      text += `• ${ci.quantity}x ${ci.item.name} (${currency}${(ci.item.price * ci.quantity).toFixed(2)})\n`;
-      if (ci.specialInstructions) text += `  (Nota: ${ci.specialInstructions})\n`;
-    });
-    text += `---------------------------------\n`;
-    text += `*Subtotal:* ${currency}${subtotal.toFixed(2)}\n`;
-    text += `*Propina (${tipPercentage}%):* ${currency}${tipAmount.toFixed(2)}\n`;
-    text += `*Total estimado:* ${currency}${total.toFixed(2)}\n`;
-    if (generalNotes) text += `*Comentarios:* ${generalNotes}\n`;
-
-    const encoded = encodeURIComponent(text);
-    // Panama number without special characters: 50768249150
-    window.open(`https://api.whatsapp.com/send?phone=50768249150&text=${encoded}`, '_blank');
-  };
-
   const handleReset = () => {
     onClearCart();
     setOrderSent(false);
+    setOrderTicketNumber('');
     onClose();
   };
 
@@ -116,7 +96,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
             </div>
             <div>
               <h2 className="font-serif-title text-xl font-bold text-stone-900">
-                Mi Comanda
+                Mi Pedido
               </h2>
               <p className="text-xs text-stone-500 font-normal">
                 {cartItems.length} {cartItems.length === 1 ? 'platillo seleccionado' : 'platillos seleccionados'}
@@ -128,7 +108,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
             id="close-order-drawer"
             onClick={onClose}
             className="p-2 rounded-sm hover:bg-stone-200/60 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
-            aria-label="Cerrar comanda"
+            aria-label="Cerrar pedido"
           >
             <X className="w-5 h-5" />
           </button>
@@ -141,52 +121,23 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
               <CheckCircle2 className="w-9 h-9" />
             </div>
 
-            <div>
-              <span className="text-[11px] uppercase tracking-widest text-[#a83b24] font-bold">
-                Ticket Confirmado #{orderTicketNumber}
-              </span>
-              <h3 className="font-serif-title text-2xl font-bold text-stone-900 mt-1">
-                Enviado
+            <div className="space-y-2">
+              <h3 className="font-serif-title text-2xl font-bold text-stone-900">
+                Pedido enviado correctamente
               </h3>
-              <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-xs mx-auto leading-relaxed">
-                Su comanda ha sido asignada para <strong className="text-stone-900">{orderType === 'mesa' ? tableNumber : 'Para Llevar'}</strong>. Nuestro equipo de cocina la está preparando.
-              </p>
+              {orderTicketNumber && (
+                <p className="text-xs text-stone-600">
+                  Número de Pedido: <span className="font-mono font-bold text-stone-900">{orderTicketNumber}</span>
+                </p>
+              )}
             </div>
 
-            {/* Receipt Summary Card */}
-            <div className="w-full bg-stone-50 rounded-sm p-4 border border-stone-200 text-left text-xs space-y-2">
-              <div className="flex justify-between font-semibold border-b border-stone-200 pb-2">
-                <span className="uppercase tracking-wider text-[11px] text-stone-500">Resumen del Pedido</span>
-                <span className="text-[#a83b24] font-bold">{cartItems.length} ítems</span>
-              </div>
-              <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-stone-700">
-                {cartItems.map((ci) => (
-                  <div key={ci.item.id} className="flex justify-between">
-                    <span className="truncate mr-2">{ci.quantity}x {ci.item.name}</span>
-                    <span className="font-medium text-stone-900">{currency}{(ci.item.price * ci.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-stone-200 pt-2 flex justify-between font-bold text-stone-900 text-sm">
-                <span>Total a Pagar</span>
-                <span className="text-[#a83b24] text-base">{currency}{total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="w-full space-y-2.5">
-              <button
-                onClick={handleShareWhatsApp}
-                className="w-full py-2.5 px-4 rounded-sm bg-emerald-700 hover:bg-emerald-800 text-white font-semibold uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
-              >
-                <Share2 className="w-4 h-4" />
-                Enviar a WhatsApp (+507)
-              </button>
-
+            <div className="w-full pt-4">
               <button
                 onClick={handleReset}
-                className="w-full py-2.5 px-4 rounded-sm bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold uppercase tracking-wider text-xs transition-colors border border-stone-300 cursor-pointer"
+                className="w-full py-3 px-4 rounded-sm bg-[#a83b24] hover:bg-[#91321d] text-white font-semibold uppercase tracking-wider text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
               >
-                Cerrar y nuevo pedido
+                Nuevo pedido
               </button>
             </div>
           </div>
@@ -197,7 +148,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
               <UtensilsCrossed className="w-8 h-8" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900">Su comanda está vacía</h3>
+              <h3 className="text-base font-bold text-stone-900">Su pedido está vacío</h3>
               <p className="text-xs text-stone-500 mt-1 max-w-xs">
                 Explore las secciones de Entradas, Platos Fuertes y Postres para seleccionar sus creaciones favoritas.
               </p>
@@ -381,21 +332,14 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="pt-2">
                 <button
                   id="send-kitchen-order-btn"
                   onClick={handleSendOrder}
-                  className="col-span-2 py-3 px-4 rounded-sm bg-[#a83b24] hover:bg-[#91321d] text-white font-semibold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs cursor-pointer"
+                  className="w-full py-3 px-4 rounded-sm bg-[#a83b24] hover:bg-[#91321d] text-white font-semibold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Enviar Comanda a Cocina</span>
-                </button>
-                <button
-                  onClick={handleShareWhatsApp}
-                  className="col-span-2 py-2 px-3 rounded-sm bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 transition-colors border border-stone-300 cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Compartir por WhatsApp (+507)</span>
+                  <span>Enviar pedido</span>
                 </button>
               </div>
             </div>

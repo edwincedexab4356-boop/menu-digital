@@ -259,7 +259,7 @@ export const SaleModal: React.FC<SaleModalProps> = ({
               >
                 <option value="efectivo">💵 Efectivo</option>
                 <option value="tarjeta">💳 Tarjeta (Débito/Crédito)</option>
-                <option value="transferencia">📱 Transferencia / Zelle / Pago Móvil</option>
+                <option value="transferencia">🏦 Transferencia</option>
                 <option value="otro">Otro</option>
               </select>
             </div>

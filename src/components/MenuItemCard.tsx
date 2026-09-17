@@ -321,7 +321,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 ? 'bg-emerald-700 text-white cursor-pointer'
                 : 'bg-[#a83b24] hover:bg-[#91321d] text-white active:scale-95 cursor-pointer'
             }`}
-            title={item.available ? 'Añadir a mi comanda' : 'Producto no disponible'}
+            title={item.available ? 'Añadir a mi pedido' : 'Producto no disponible'}
           >
             {!item.available ? (
               <span>No disponible</span>

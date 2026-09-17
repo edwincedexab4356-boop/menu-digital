@@ -592,7 +592,7 @@ export default function App() {
               </div>
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-[#fca5a5] font-bold block">
-                  {tableNumber} · Comanda lista
+                  {tableNumber} · Pedido listo
                 </span>
                 <span className="text-sm font-semibold">
                   Ver pedido ({totalCartCount} {totalCartCount === 1 ? 'platillo' : 'platillos'})

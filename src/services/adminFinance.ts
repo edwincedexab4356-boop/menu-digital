@@ -45,11 +45,9 @@ export async function deleteSale(saleId: string): Promise<void> {
 
 export function subscribeToSales(onUpdate: (sales: Sale[]) => void, onError?: (error: Error) => void): () => void {
   const ventasRef = collection(db, 'ventas');
-  // Order by creadoEn descending or fallback
-  const q = query(ventasRef, orderBy('creadoEn', 'desc'));
 
   return onSnapshot(
-    q,
+    ventasRef,
     (snapshot) => {
       const sales: Sale[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
@@ -61,39 +59,20 @@ export function subscribeToSales(onUpdate: (sales: Sale[]) => void, onError?: (e
           clienteNombre: data.clienteNombre || '',
           mesa: data.mesa || '',
           notas: data.notas || '',
-          fecha: data.fecha || (data.creadoEn ? new Date(data.creadoEn.toDate()).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          fecha: data.fecha || (data.creadoEn?.toDate ? new Date(data.creadoEn.toDate()).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
           creadoEn: data.creadoEn,
           creadoPor: data.creadoPor || '',
         };
+      }).sort((a, b) => {
+        const tA = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : (a.fecha ? new Date(a.fecha).getTime() : 0);
+        const tB = b.creadoEn?.toMillis ? b.creadoEn.toMillis() : (b.fecha ? new Date(b.fecha).getTime() : 0);
+        return tB - tA;
       });
       onUpdate(sales);
     },
     (err) => {
-      console.warn('Error fetching sales ordered by creadoEn, falling back to unordered query:', err);
-      // Fallback in case index or null timestamp on local creation
-      const fallbackUnsub = onSnapshot(collection(db, 'ventas'), (snapshot) => {
-        const sales: Sale[] = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            items: Array.isArray(data.items) ? data.items : [],
-            total: typeof data.total === 'number' ? data.total : Number(data.total) || 0,
-            metodoPago: data.metodoPago || 'efectivo',
-            clienteNombre: data.clienteNombre || '',
-            mesa: data.mesa || '',
-            notas: data.notas || '',
-            fecha: data.fecha || new Date().toISOString().split('T')[0],
-            creadoEn: data.creadoEn,
-            creadoPor: data.creadoPor || '',
-          };
-        }).sort((a, b) => {
-          const tA = a.creadoEn?.toMillis?.() || new Date(a.fecha).getTime() || 0;
-          const tB = b.creadoEn?.toMillis?.() || new Date(b.fecha).getTime() || 0;
-          return tB - tA;
-        });
-        onUpdate(sales);
-      }, onError);
-      return fallbackUnsub;
+      console.error('Error listening to sales collection:', err);
+      if (onError) onError(err);
     }
   );
 }
@@ -129,10 +108,9 @@ export async function deleteExpense(gastoId: string): Promise<void> {
 
 export function subscribeToExpenses(onUpdate: (gastos: Gasto[]) => void, onError?: (error: Error) => void): () => void {
   const gastosRef = collection(db, 'gastos');
-  const q = query(gastosRef, orderBy('creadoEn', 'desc'));
 
   return onSnapshot(
-    q,
+    gastosRef,
     (snapshot) => {
       const gastos: Gasto[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
@@ -141,38 +119,22 @@ export function subscribeToExpenses(onUpdate: (gastos: Gasto[]) => void, onError
           descripcion: data.descripcion || '',
           categoria: data.categoria || 'Otros',
           monto: typeof data.monto === 'number' ? data.monto : Number(data.monto) || 0,
-          fecha: data.fecha || (data.creadoEn ? new Date(data.creadoEn.toDate()).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          fecha: data.fecha || (data.creadoEn?.toDate ? new Date(data.creadoEn.toDate()).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
           nota: data.nota || '',
           comprobanteUrl: data.comprobanteUrl || '',
           creadoEn: data.creadoEn,
           creadoPor: data.creadoPor || '',
         };
+      }).sort((a, b) => {
+        const tA = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : (a.fecha ? new Date(a.fecha).getTime() : 0);
+        const tB = b.creadoEn?.toMillis ? b.creadoEn.toMillis() : (b.fecha ? new Date(b.fecha).getTime() : 0);
+        return tB - tA;
       });
       onUpdate(gastos);
     },
     (err) => {
-      console.warn('Error fetching expenses ordered by creadoEn, falling back:', err);
-      return onSnapshot(collection(db, 'gastos'), (snapshot) => {
-        const gastos: Gasto[] = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            descripcion: data.descripcion || '',
-            categoria: data.categoria || 'Otros',
-            monto: typeof data.monto === 'number' ? data.monto : Number(data.monto) || 0,
-            fecha: data.fecha || new Date().toISOString().split('T')[0],
-            nota: data.nota || '',
-            comprobanteUrl: data.comprobanteUrl || '',
-            creadoEn: data.creadoEn,
-            creadoPor: data.creadoPor || '',
-          };
-        }).sort((a, b) => {
-          const tA = a.creadoEn?.toMillis?.() || new Date(a.fecha).getTime() || 0;
-          const tB = b.creadoEn?.toMillis?.() || new Date(b.fecha).getTime() || 0;
-          return tB - tA;
-        });
-        onUpdate(gastos);
-      }, onError);
+      console.error('Error listening to expenses collection:', err);
+      if (onError) onError(err);
     }
   );
 }

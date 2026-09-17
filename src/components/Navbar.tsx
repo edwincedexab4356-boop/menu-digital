@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Cart / Comanda Button */}
+            {/* Cart / Pedido Button */}
             <button
               id="cart-floating-btn"
               onClick={onOpenCart}
@@ -93,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-label="Ver mi pedido"
             >
               <ShoppingBag className="w-4 h-4 text-white" />
-              <span className="hidden sm:inline">Comanda</span>
+              <span className="hidden sm:inline">Pedido</span>
               {cartCount > 0 && (
                 <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold bg-white text-[#a83b24] rounded-sm">
                   {cartCount}

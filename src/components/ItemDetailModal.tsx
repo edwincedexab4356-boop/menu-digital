@@ -311,11 +311,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             ) : addedEffect ? (
               <>
                 <Check className="w-4 h-4 stroke-[3]" />
-                <span>¡Agregado a la comanda!</span>
+                <span>¡Agregado al pedido!</span>
               </>
             ) : (
               <>
-                <span>Añadir a mi Comanda</span>
+                <span>Añadir a mi Pedido</span>
                 <span className="opacity-60">•</span>
                 <span>{currency}{(item.price * quantity).toFixed(2)} USD</span>
               </>

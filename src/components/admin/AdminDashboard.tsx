@@ -502,6 +502,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setIsSaleModalOpen(true);
               }}
               onShowToast={showToast}
+              onSaleDeleted={(saleId) => {
+                setSales((prev) => prev.filter((s) => s.id !== saleId));
+              }}
             />
           )}
 

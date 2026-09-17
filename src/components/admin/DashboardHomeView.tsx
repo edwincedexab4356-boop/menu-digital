@@ -51,44 +51,69 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
 
   // Helper date boundaries
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const getLocalDateStr = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayLocalStr = getLocalDateStr(now);
+  const todayUtcStr = now.toISOString().split('T')[0];
 
   // Week boundary (Monday)
   const dayOfWeek = now.getDay() || 7;
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - dayOfWeek + 1);
-  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+  const startOfWeekStr = getLocalDateStr(startOfWeek);
 
   // Month boundary
   const currentYear = now.getFullYear();
   const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
-  const startOfMonthStr = `${currentYear}-${currentMonthStr}-01`;
+  const monthPrefix = `${currentYear}-${currentMonthStr}`;
+
+  // Helper to check if a sale/gasto matches today
+  const isToday = (fecha: string) => fecha === todayLocalStr || fecha === todayUtcStr;
 
   // 1. Resumen Financiero Calculations:
   // - Ventas de hoy
   const ventasHoy = sales
-    .filter((s) => s.fecha === todayStr)
+    .filter((s) => isToday(s.fecha))
     .reduce((acc, s) => acc + s.total, 0);
 
   // - Ventas de esta semana
   const ventasSemana = sales
-    .filter((s) => s.fecha >= startOfWeekStr && s.fecha <= todayStr)
+    .filter((s) => s.fecha >= startOfWeekStr)
     .reduce((acc, s) => acc + s.total, 0);
 
   // - Ventas de este mes
-  const salesMes = sales.filter((s) => s.fecha >= startOfMonthStr && s.fecha <= todayStr);
+  const salesMes = sales.filter((s) => s.fecha.startsWith(monthPrefix));
   const ventasMes = salesMes.reduce((acc, s) => acc + s.total, 0);
 
   // - Gastos de este mes
-  const expensesMes = expenses.filter((e) => e.fecha >= startOfMonthStr && e.fecha <= todayStr);
+  const expensesMes = expenses.filter((e) => e.fecha.startsWith(monthPrefix));
   const gastosMes = expensesMes.reduce((acc, e) => acc + e.monto, 0);
 
   // - Ganancia estimada del mes = Ventas - Gastos
   const gananciaMes = ventasMes - gastosMes;
 
-  // - Cantidad de ventas (este mes y total)
-  const cantidadVentasMes = salesMes.length;
+  // - Cantidad de ventas (total y este mes)
   const cantidadVentasTotal = sales.length;
+  const cantidadVentasMes = salesMes.length;
+
+  // - Cantidad de unidades/platillos vendidos (total y este mes)
+  const totalUnidadesVendidas = sales.reduce((acc, s) => {
+    if (Array.isArray(s.items) && s.items.length > 0) {
+      return acc + s.items.reduce((sum, item) => sum + (Number(item.cantidad) || 1), 0);
+    }
+    return acc + (s.total > 0 ? 1 : 0);
+  }, 0);
+
+  const unidadesVendidasMes = salesMes.reduce((acc, s) => {
+    if (Array.isArray(s.items) && s.items.length > 0) {
+      return acc + s.items.reduce((sum, item) => sum + (Number(item.cantidad) || 1), 0);
+    }
+    return acc + (s.total > 0 ? 1 : 0);
+  }, 0);
 
   // Recent products & recent sales
   const recentProducts = [...products].slice(0, 5);
@@ -255,14 +280,14 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
             </div>
           </div>
 
-          {/* Card 6: Cantidad de ventas */}
+          {/* Card 6: Cantidad de ventas y unidades vendidas */}
           <div 
             onClick={() => onNavigateTab('ventas')}
             className="bg-white p-4 rounded-sm border border-stone-200 hover:border-stone-400 transition-all cursor-pointer shadow-xs group"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                Cantidad Ventas
+                Total de Ventas
               </span>
               <div className="w-7 h-7 rounded-xs bg-stone-100 text-stone-600 flex items-center justify-center">
                 <ShoppingBag className="w-3.5 h-3.5" />
@@ -270,10 +295,13 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
             </div>
             <div className="mt-2">
               <span className="font-serif-title text-2xl font-bold text-stone-900">
-                {cantidadVentasMes}
+                {cantidadVentasTotal} {cantidadVentasTotal === 1 ? 'venta' : 'ventas'}
+              </span>
+              <span className="text-[11px] font-semibold text-[#a83b24] block mt-0.5">
+                {totalUnidadesVendidas} {totalUnidadesVendidas === 1 ? 'platillo vendido' : 'platillos vendidos'}
               </span>
               <span className="text-[10px] text-stone-400 block mt-0.5">
-                {cantidadVentasTotal} históricas
+                {cantidadVentasMes} este mes ({unidadesVendidasMes} platillos)
               </span>
             </div>
           </div>

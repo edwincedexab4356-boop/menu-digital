@@ -33,27 +33,37 @@ export const FinanceAnalyticsView: React.FC<FinanceAnalyticsViewProps> = ({
 
   // Date calculation boundaries
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const getLocalDateStr = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayLocalStr = getLocalDateStr(now);
+  const todayUtcStr = now.toISOString().split('T')[0];
+  const isToday = (fecha: string) => fecha === todayLocalStr || fecha === todayUtcStr;
 
   // Week boundary (Monday)
   const dayOfWeek = now.getDay() || 7;
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - dayOfWeek + 1);
-  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+  const startOfWeekStr = getLocalDateStr(startOfWeek);
 
   // Month boundary
-  const startOfMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const currentYear = now.getFullYear();
+  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
+  const monthPrefix = `${currentYear}-${currentMonthStr}`;
 
   // Year boundary
-  const startOfYearStr = `${now.getFullYear()}-01-01`;
+  const startOfYearStr = `${currentYear}-01-01`;
 
   // Filtered sales and expenses according to selected range
   const { filteredSales, filteredExpenses } = useMemo(() => {
     const isWithinRange = (fecha: string) => {
-      if (rangeMode === 'hoy') return fecha === todayStr;
-      if (rangeMode === 'semana') return fecha >= startOfWeekStr && fecha <= todayStr;
-      if (rangeMode === 'mes') return fecha >= startOfMonthStr && fecha <= todayStr;
-      if (rangeMode === 'ano') return fecha >= startOfYearStr && fecha <= todayStr;
+      if (rangeMode === 'hoy') return isToday(fecha);
+      if (rangeMode === 'semana') return fecha >= startOfWeekStr;
+      if (rangeMode === 'mes') return fecha.startsWith(monthPrefix);
+      if (rangeMode === 'ano') return fecha >= startOfYearStr;
       if (rangeMode === 'custom') {
         if (customStart && fecha < customStart) return false;
         if (customEnd && fecha > customEnd) return false;
@@ -66,7 +76,7 @@ export const FinanceAnalyticsView: React.FC<FinanceAnalyticsViewProps> = ({
       filteredSales: sales.filter((s) => isWithinRange(s.fecha)),
       filteredExpenses: expenses.filter((g) => isWithinRange(g.fecha)),
     };
-  }, [sales, expenses, rangeMode, customStart, customEnd, todayStr, startOfWeekStr, startOfMonthStr, startOfYearStr]);
+  }, [sales, expenses, rangeMode, customStart, customEnd, todayLocalStr, todayUtcStr, startOfWeekStr, monthPrefix, startOfYearStr]);
 
   // Aggregate values for current range
   const totalVentas = useMemo(() => filteredSales.reduce((acc, s) => acc + s.total, 0), [filteredSales]);
@@ -76,22 +86,22 @@ export const FinanceAnalyticsView: React.FC<FinanceAnalyticsViewProps> = ({
 
   // Fixed Periods (Hoy, Semana, Mes)
   const dailyMetrics = useMemo(() => {
-    const s = sales.filter((s) => s.fecha === todayStr).reduce((acc, item) => acc + item.total, 0);
-    const g = expenses.filter((e) => e.fecha === todayStr).reduce((acc, item) => acc + item.monto, 0);
+    const s = sales.filter((s) => isToday(s.fecha)).reduce((acc, item) => acc + item.total, 0);
+    const g = expenses.filter((e) => isToday(e.fecha)).reduce((acc, item) => acc + item.monto, 0);
     return { ventas: s, gastos: g, ganancia: s - g };
-  }, [sales, expenses, todayStr]);
+  }, [sales, expenses, todayLocalStr, todayUtcStr]);
 
   const weeklyMetrics = useMemo(() => {
-    const s = sales.filter((s) => s.fecha >= startOfWeekStr && s.fecha <= todayStr).reduce((acc, item) => acc + item.total, 0);
-    const g = expenses.filter((e) => e.fecha >= startOfWeekStr && e.fecha <= todayStr).reduce((acc, item) => acc + item.monto, 0);
+    const s = sales.filter((s) => s.fecha >= startOfWeekStr).reduce((acc, item) => acc + item.total, 0);
+    const g = expenses.filter((e) => e.fecha >= startOfWeekStr).reduce((acc, item) => acc + item.monto, 0);
     return { ventas: s, gastos: g, ganancia: s - g };
-  }, [sales, expenses, startOfWeekStr, todayStr]);
+  }, [sales, expenses, startOfWeekStr]);
 
   const monthlyMetrics = useMemo(() => {
-    const s = sales.filter((s) => s.fecha >= startOfMonthStr && s.fecha <= todayStr).reduce((acc, item) => acc + item.total, 0);
-    const g = expenses.filter((e) => e.fecha >= startOfMonthStr && e.fecha <= todayStr).reduce((acc, item) => acc + item.monto, 0);
+    const s = sales.filter((s) => s.fecha.startsWith(monthPrefix)).reduce((acc, item) => acc + item.total, 0);
+    const g = expenses.filter((e) => e.fecha.startsWith(monthPrefix)).reduce((acc, item) => acc + item.monto, 0);
     return { ventas: s, gastos: g, ganancia: s - g };
-  }, [sales, expenses, startOfMonthStr, todayStr]);
+  }, [sales, expenses, monthPrefix]);
 
   // 1. Chart: Ventas por día (últimos 14 días)
   const dailyChartData = useMemo(() => {
@@ -99,14 +109,15 @@ export const FinanceAnalyticsView: React.FC<FinanceAnalyticsViewProps> = ({
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(now.getDate() - i);
+      const localStr = getLocalDateStr(d);
       const iso = d.toISOString().split('T')[0];
       const dayLabel = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
 
       const dayVentas = sales
-        .filter((s) => s.fecha === iso)
+        .filter((s) => s.fecha === localStr || s.fecha === iso)
         .reduce((sum, s) => sum + s.total, 0);
       const dayGastos = expenses
-        .filter((g) => g.fecha === iso)
+        .filter((g) => g.fecha === localStr || g.fecha === iso)
         .reduce((sum, g) => sum + g.monto, 0);
 
       days.push({ label: dayLabel, fecha: iso, ventas: dayVentas, gastos: dayGastos });
@@ -257,7 +268,7 @@ export const FinanceAnalyticsView: React.FC<FinanceAnalyticsViewProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
               Ganancia Diaria (Hoy)
             </span>
-            <span className="text-[11px] font-mono text-stone-400">{todayStr}</span>
+            <span className="text-[11px] font-mono text-stone-400">{todayLocalStr}</span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className={`font-serif-title text-2xl font-bold ${dailyMetrics.ganancia >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
