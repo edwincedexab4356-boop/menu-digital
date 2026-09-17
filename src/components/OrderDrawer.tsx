@@ -12,6 +12,7 @@ import {
   FileText
 } from 'lucide-react';
 import { CartItem, RestaurantData } from '../types';
+import { createOrder } from '../services/orderService';
 
 interface OrderDrawerProps {
   isOpen: boolean;
@@ -50,11 +51,33 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
   const tipAmount = (subtotal * tipPercentage) / 100;
   const total = subtotal + tipAmount;
 
-  const handleSendOrder = () => {
-    const randomTicket = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
-    setOrderTicketNumber(randomTicket);
+  ```typescript
+const handleSendOrder = async () => {
+  try {
+    if (cartItems.length === 0) return;
+
+    const orderItems = cartItems.map((ci) => ({
+      id: ci.item.id,
+      name: ci.item.name,
+      price: ci.item.price,
+      quantity: ci.quantity,
+    }));
+
+    const orderTotal = total;
+
+    const orderId = await createOrder(orderItems, orderTotal);
+
+    setOrderTicketNumber(orderId);
     setOrderSent(true);
-  };
+
+    console.log('Pedido enviado correctamente:', orderId);
+  } catch (error) {
+    console.error('No se pudo enviar el pedido:', error);
+    alert('No se pudo enviar el pedido. Intenta nuevamente.');
+  }
+};
+```
+
 
   const handleShareWhatsApp = () => {
     let text = `*Pedido Digital - ${restaurant.name}*\n`;
