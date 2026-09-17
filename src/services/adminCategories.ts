@@ -88,6 +88,19 @@ export function useFirestoreCategories(existingProductCategories: string[] = [])
   };
 
   /**
+   * Edit/Rename an existing section/category in Firestore
+   */
+  const updateCategory = async (id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) throw new Error('El nombre de la sección no puede estar vacío');
+    const catDoc = doc(db, 'categorias', id);
+    await setDoc(catDoc, {
+      nombre: trimmed,
+      actualizadoEn: serverTimestamp(),
+    }, { merge: true });
+  };
+
+  /**
    * Delete a section/category from Firestore
    */
   const removeCategory = async (id: string) => {
@@ -99,6 +112,7 @@ export function useFirestoreCategories(existingProductCategories: string[] = [])
     categories,
     loading,
     addCategory,
+    updateCategory,
     removeCategory,
   };
 }

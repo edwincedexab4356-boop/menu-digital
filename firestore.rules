@@ -40,5 +40,17 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    // Ventas collection (sales records):
+    // Strictly accessible ONLY by authenticated administrators with rol == 'admin'
+    match /ventas/{ventaId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // Gastos collection (operating expenses):
+    // Strictly accessible ONLY by authenticated administrators with rol == 'admin'
+    match /gastos/{gastoId} {
+      allow read, create, update, delete: if isAdmin();
+    }
   }
 }
