@@ -9,6 +9,7 @@ interface NavbarProps {
   onOpenCart: () => void;
   onOpenInfo: () => void;
   onChangeTable: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCart,
   onOpenInfo,
   onChangeTable,
+  onNavigateToAdmin,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md text-stone-900 border-b border-stone-200/90 shadow-xs">
@@ -70,6 +72,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Info className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
+
+            {/* Admin Panel Trigger */}
+            {onNavigateToAdmin && (
+              <button
+                id="admin-nav-btn"
+                onClick={onNavigateToAdmin}
+                className="hidden sm:inline-flex items-center space-x-1 px-2.5 py-2 rounded-sm text-stone-600 hover:text-[#a83b24] hover:bg-stone-100 border border-stone-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                title="Acceso al Panel de Administración (/admin)"
+              >
+                <span>Admin</span>
+              </button>
+            )}
 
             {/* Cart / Comanda Button */}
             <button

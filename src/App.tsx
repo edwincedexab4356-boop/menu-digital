@@ -9,17 +9,59 @@ import { RestaurantInfoModal } from './components/RestaurantInfoModal';
 import { TableSelectorModal } from './components/TableSelectorModal';
 import { restaurantInfo } from './data/menuData';
 import { useFirestoreProducts } from './services/firestoreMenu';
+import { AdminPage } from './components/admin/AdminPage';
 import { MenuCategory, MenuItem, CartItem, DietaryTag } from './types';
-import { ShoppingBag, ArrowRight, Salad, Flame, CakeSlice, Utensils, Sparkles, Database, Loader2, RefreshCw } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Salad, Flame, CakeSlice, Utensils, Sparkles, Database, Loader2, RefreshCw, Lock } from 'lucide-react';
 
 export default function App() {
+  // Routing: detect if user is on /admin or standard public menu
+  const [currentRoute, setCurrentRoute] = useState<'menu' | 'admin'>(() => {
+    if (typeof window === 'undefined') return 'menu';
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    if (path === '/admin' || path.startsWith('/admin') || hash === '#admin' || search.includes('admin')) {
+      return 'admin';
+    }
+    return 'menu';
+  });
+
+  // Sync route with browser history (back/forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/admin' || path.startsWith('/admin') || hash === '#admin') {
+        setCurrentRoute('admin');
+      } else {
+        setCurrentRoute('menu');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToAdmin = () => {
+    setCurrentRoute('admin');
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState(null, '', '/admin');
+    }
+  };
+
+  const navigateToMenu = () => {
+    setCurrentRoute('menu');
+    if (window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/');
+    }
+  };
+
   const [activeCategory, setActiveCategory] = useState<MenuCategory>('todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<DietaryTag | 'todos'>('todos');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
 
-  // Firestore real-time data
+  // Firestore real-time data - exclusively from Firestore as requested
   const {
     products: firestoreProducts,
     loading: isFirestoreLoading,
@@ -27,17 +69,10 @@ export default function App() {
     firestoreCount,
     isFirestoreConnected,
     seedSampleProducts,
-    defaultFallbackItems,
   } = useFirestoreProducts();
 
-  // If Firestore has documents, use them exclusively; otherwise use default fallback items
-  const currentMenuItems = useMemo(() => {
-    if (firestoreProducts && firestoreProducts.length > 0) {
-      return firestoreProducts;
-    }
-    return defaultFallbackItems;
-  }, [firestoreProducts, defaultFallbackItems]);
-
+  // Products come exclusively from Firestore; NO hardcoded fallback in menu
+  const currentMenuItems = firestoreProducts;
   const isUsingRealFirestoreDocs = firestoreProducts.length > 0;
   
   // Cart / Order state
@@ -203,6 +238,11 @@ export default function App() {
     0
   );
 
+  // If user is accessing /admin, render Admin Portal
+  if (currentRoute === 'admin') {
+    return <AdminPage onNavigateHome={navigateToMenu} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 flex flex-col font-sans selection:bg-[#a83b24] selection:text-white">
       {/* Navigation Header */}
@@ -213,6 +253,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenInfo={() => setIsInfoOpen(true)}
         onChangeTable={() => setIsTableModalOpen(true)}
+        onNavigateToAdmin={navigateToAdmin}
       />
 
       {/* Hero Atmosphere Banner */}
@@ -578,6 +619,13 @@ export default function App() {
               className="hover:text-[#a83b24] transition-colors cursor-pointer"
             >
               Cambiar Mesa ({tableNumber})
+            </button>
+            <button
+              onClick={navigateToAdmin}
+              className="text-stone-500 hover:text-[#a83b24] font-medium transition-colors cursor-pointer inline-flex items-center gap-1"
+            >
+              <Lock className="w-3 h-3" />
+              <span>Acceso Administrador (/admin)</span>
             </button>
             <span className="text-stone-700 font-medium">
               Tel: {restaurantInfo.phone}

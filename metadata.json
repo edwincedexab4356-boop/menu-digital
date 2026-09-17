@@ -1,6 +1,6 @@
 {
-  "name": "Menú Digital",
-  "description": "Menú digital moderno para restaurante con entradas, platos fuertes, postres y visualización interactiva de platillos.",
+  "name": "Delicias Belgi | Menú Digital Online",
+  "description": "Descubre el menú digital de Delicias Belgi: heladería, dulcería y repostería. Consulta nuestros productos y precios en línea.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
