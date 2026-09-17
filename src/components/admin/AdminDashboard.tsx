@@ -14,12 +14,16 @@ import {
   Layers, 
   Eye, 
   EyeOff, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  FolderPlus,
+  Settings
 } from 'lucide-react';
 import { MenuItem } from '../../types';
 import { ProductFormModal } from './ProductFormModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { ManageSectionsModal } from './ManageSectionsModal';
 import { setProductAvailability } from '../../services/adminProducts';
+import { useFirestoreCategories } from '../../services/adminCategories';
 
 interface AdminDashboardProps {
   userEmail: string | null;
@@ -41,12 +45,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isSectionsModalOpen, setIsSectionsModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<MenuItem | null>(null);
   const [productToDelete, setProductToDelete] = useState<MenuItem | null>(null);
   
   // Toast notifications
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Load Firestore Categories & Sections
+  const existingProductCategories = useMemo(() => {
+    return Array.from(new Set(products.map((p) => p.category)));
+  }, [products]);
+
+  const {
+    categories: dynamicCategories,
+    addCategory,
+    removeCategory,
+  } = useFirestoreCategories(existingProductCategories);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -73,11 +89,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Distinct categories
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(products.map((p) => p.category)));
-    return ['todas', ...cats];
+  // Product counts per category
+  const productCountsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
   }, [products]);
+
+  // Distinct filter categories
+  const filterCategories = useMemo(() => {
+    const ids = new Set<string>();
+    dynamicCategories.forEach((c) => ids.add(c.id));
+    products.forEach((p) => ids.add(p.category));
+    return ['todas', ...Array.from(ids)];
+  }, [dynamicCategories, products]);
 
   // Filtered products
   const filteredProducts = useMemo(() => {
@@ -101,11 +128,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [products, selectedCategory, searchQuery]);
 
   // Category label formatter
-  const formatCategory = (cat: string) => {
-    if (cat === 'entradas') return 'Entrada';
-    if (cat === 'platos_fuertes') return 'Plato Fuerte';
-    if (cat === 'postres') return 'Postre';
-    return cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ');
+  const formatCategory = (catId: string) => {
+    if (catId === 'todas') return 'Todas';
+    const found = dynamicCategories.find((c) => c.id === catId);
+    if (found) return found.nombre;
+    if (catId === 'entradas') return 'Entrada';
+    if (catId === 'platos_fuertes') return 'Plato Fuerte';
+    if (catId === 'postres') return 'Postre';
+    return catId.charAt(0).toUpperCase() + catId.slice(1).replace('_', ' ');
   };
 
   return (
@@ -174,35 +204,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Main Admin Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Section Header: Productos */}
+        {/* Section Header: Productos y Secciones */}
         <div className="bg-white p-6 rounded-sm border border-stone-200 shadow-xs mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-serif-title text-2xl font-bold text-stone-900">
-                  Productos
+                  Carta & Secciones
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-stone-100 text-stone-700 border border-stone-200">
                   {products.length} {products.length === 1 ? 'platillo' : 'platillos'}
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  {dynamicCategories.length} secciones
+                </span>
               </div>
               <p className="text-xs text-stone-500 mt-1">
-                Administra la oferta gastronómica, precios en USD y disponibilidad en tiempo real para Delicias Belgi
+                Sube fotos desde tu dispositivo, modifica precios, añade o quita secciones del menú en tiempo real
               </p>
             </div>
 
-            {/* + Agregar producto Button */}
-            <button
-              id="admin-add-product-btn"
-              onClick={() => {
-                setProductToEdit(null);
-                setIsFormModalOpen(true);
-              }}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#a83b24] hover:bg-[#91321d] text-white rounded-xs text-xs font-bold uppercase tracking-widest transition-all shadow-xs cursor-pointer active:scale-98 shrink-0"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>+ Agregar producto</span>
-            </button>
+            {/* Action Buttons: Gestionar Secciones y + Agregar producto */}
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              {/* Botón Gestionar Secciones */}
+              <button
+                id="admin-manage-sections-btn"
+                onClick={() => setIsSectionsModalOpen(true)}
+                className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 rounded-xs text-xs font-bold uppercase tracking-wider transition-all shadow-xs cursor-pointer active:scale-98"
+                title="Añade, edita o quita secciones del menú (heladería, dulcería, repostería, etc.)"
+              >
+                <Layers className="w-4 h-4 text-[#a83b24]" />
+                <span>Gestionar Secciones</span>
+              </button>
+
+              {/* + Agregar producto Button */}
+              <button
+                id="admin-add-product-btn"
+                onClick={() => {
+                  setProductToEdit(null);
+                  setIsFormModalOpen(true);
+                }}
+                className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#a83b24] hover:bg-[#91321d] text-white rounded-xs text-xs font-bold uppercase tracking-widest transition-all shadow-xs cursor-pointer active:scale-98"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>+ Agregar producto</span>
+              </button>
+            </div>
           </div>
 
           {/* Search & Category Filter Toolbar */}
@@ -221,7 +268,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Category Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {categories.map((cat) => (
+              {filterCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
@@ -231,7 +278,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                   }`}
                 >
-                  {cat === 'todas' ? 'Todas' : formatCategory(cat)}
+                  {formatCategory(cat)}
                 </button>
               ))}
             </div>
@@ -279,7 +326,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <thead>
                   <tr className="bg-stone-50/80 border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-stone-500">
                     <th className="py-3.5 px-4">Producto</th>
-                    <th className="py-3.5 px-4">Categoría</th>
+                    <th className="py-3.5 px-4">Sección / Categoría</th>
                     <th className="py-3.5 px-4">Precio (USD)</th>
                     <th className="py-3.5 px-4">Descripción</th>
                     <th className="py-3.5 px-4 text-center">Disponibilidad</th>
@@ -380,7 +427,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 setIsFormModalOpen(true);
                               }}
                               className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xs border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs transition-colors cursor-pointer"
-                              title="Editar producto"
+                              title="Editar producto o cambiar foto"
                             >
                               <Edit3 className="w-3.5 h-3.5 text-stone-500" />
                               <span>Editar</span>
@@ -457,9 +504,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {isToggling ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
                         ) : product.available ? (
-                          <Eye className="w-3 h-3 text-emerald-600" />
+                          <Eye className="w-3.5 h-3.5 text-emerald-600" />
                         ) : (
-                          <EyeOff className="w-3 h-3 text-stone-400" />
+                          <EyeOff className="w-3.5 h-3.5 text-stone-400" />
                         )}
                         <span>{product.available ? 'Disponible' : 'Agotado'}</span>
                       </button>
@@ -499,6 +546,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }}
         productToEdit={productToEdit}
         onSuccess={(msg) => showToast(msg, 'success')}
+        availableCategories={dynamicCategories}
+      />
+
+      {/* Manage Sections / Categories Modal */}
+      <ManageSectionsModal
+        isOpen={isSectionsModalOpen}
+        onClose={() => setIsSectionsModalOpen(false)}
+        categories={dynamicCategories}
+        onAddCategory={addCategory}
+        onRemoveCategory={removeCategory}
+        productCountsByCategory={productCountsByCategory}
       />
 
       {/* Delete Confirmation Modal */}

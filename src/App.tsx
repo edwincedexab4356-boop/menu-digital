@@ -9,6 +9,7 @@ import { RestaurantInfoModal } from './components/RestaurantInfoModal';
 import { TableSelectorModal } from './components/TableSelectorModal';
 import { restaurantInfo } from './data/menuData';
 import { useFirestoreProducts } from './services/firestoreMenu';
+import { useFirestoreCategories } from './services/adminCategories';
 import { AdminPage } from './components/admin/AdminPage';
 import { MenuCategory, MenuItem, CartItem, DietaryTag } from './types';
 import { ShoppingBag, ArrowRight, Salad, Flame, CakeSlice, Utensils, Sparkles, Database, Loader2, RefreshCw, Lock } from 'lucide-react';
@@ -123,14 +124,23 @@ export default function App() {
     setIsSeeding(false);
   };
 
-  // Find all distinct categories present in menu items
+  // Categories stored in Firestore / derived from menu items
+  const distinctProductCategories = useMemo(() => {
+    return Array.from(new Set(currentMenuItems.map((i) => i.category)));
+  }, [currentMenuItems]);
+
+  const { categories: firestoreCategories } = useFirestoreCategories(distinctProductCategories);
+
+  // Find all distinct categories present in menu items or defined in Firestore
   const extraCategories = useMemo(() => {
     const standard: string[] = ['entradas', 'platos_fuertes', 'postres'];
+    const customFromFirestore = firestoreCategories
+      .map((c) => c.id)
+      .filter((c) => !standard.includes(c));
     const allCategories: string[] = currentMenuItems.map((i) => i.category);
-    return Array.from(new Set<string>(allCategories)).filter(
-      (c: string) => !standard.includes(c)
-    );
-  }, [currentMenuItems]);
+    const customFromProducts = allCategories.filter((c) => !standard.includes(c));
+    return Array.from(new Set<string>([...customFromFirestore, ...customFromProducts]));
+  }, [currentMenuItems, firestoreCategories]);
 
   // Counts for each category
   const categoryCounts = useMemo(() => {
@@ -478,6 +488,9 @@ export default function App() {
             {extraCategories.map((cat) => {
               const catItems = filteredItems.filter((i) => i.category === cat);
               if (catItems.length === 0) return null;
+              const foundCat = firestoreCategories.find((c) => c.id === cat);
+              const displayName = foundCat ? foundCat.nombre : cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ');
+
               return (
                 <section key={cat} id={`section-${cat}`} className="scroll-mt-40">
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 pb-3 border-b border-stone-300 gap-2">
@@ -489,7 +502,7 @@ export default function App() {
                         </span>
                       </div>
                       <h2 className="font-serif-title text-2xl sm:text-3xl font-bold text-stone-900">
-                        {cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
+                        {displayName}
                       </h2>
                     </div>
                     <span className="text-xs sm:text-sm text-stone-500 font-medium">
