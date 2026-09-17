@@ -7,8 +7,6 @@ import { ItemDetailModal } from './components/ItemDetailModal';
 import { OrderDrawer } from './components/OrderDrawer';
 import { RestaurantInfoModal } from './components/RestaurantInfoModal';
 import { TableSelectorModal } from './components/TableSelectorModal';
-import { QrCodeModal } from './components/QrCodeModal';
-import { generateMenuQrCode } from './utils/qrGenerator';
 import { restaurantInfo } from './data/menuData';
 import { useFirestoreProducts } from './services/firestoreMenu';
 import { useFirestoreCategories } from './services/adminCategories';
@@ -104,19 +102,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
-  const [isQrOpen, setIsQrOpen] = useState(false);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [isSeeding, setIsSeeding] = useState(false);
-
-  // Generate QR Code URL for the current table and origin
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const base = `${window.location.origin}${window.location.pathname.replace(/\/admin.*$/, '')}`;
-    const target = tableNumber ? `${base}?mesa=${encodeURIComponent(tableNumber)}` : base;
-    generateMenuQrCode(target).then((url) => {
-      if (url) setQrCodeDataUrl(url);
-    });
-  }, [tableNumber]);
 
   // Sync cart to localStorage (isolated strictly to this client device)
   useEffect(() => {
@@ -291,7 +277,6 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenInfo={() => setIsInfoOpen(true)}
         onChangeTable={() => setIsTableModalOpen(true)}
-        onOpenQr={() => setIsQrOpen(true)}
         onNavigateToAdmin={navigateToAdmin}
       />
 
@@ -303,9 +288,6 @@ export default function App() {
           const el = document.getElementById('menu-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
-        onOpenQr={() => setIsQrOpen(true)}
-        qrCodeUrl={qrCodeDataUrl}
-        tableNumber={tableNumber}
       />
 
       {/* Sticky Categories & Dietary Filter Navigation */}
@@ -718,14 +700,6 @@ export default function App() {
         onClose={() => setIsTableModalOpen(false)}
         currentTable={tableNumber}
         onSelectTable={setTableNumber}
-      />
-
-      {/* QR Code Modal for Menu & Table */}
-      <QrCodeModal
-        isOpen={isQrOpen}
-        onClose={() => setIsQrOpen(false)}
-        restaurantName={restaurantInfo.name}
-        currentTable={tableNumber}
       />
     </div>
   );
