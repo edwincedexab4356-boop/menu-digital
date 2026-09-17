@@ -51,7 +51,6 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
   const tipAmount = (subtotal * tipPercentage) / 100;
   const total = subtotal + tipAmount;
 
-  ```typescript
 const handleSendOrder = async () => {
   try {
     if (cartItems.length === 0) return;
