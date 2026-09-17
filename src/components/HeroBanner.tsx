@@ -1,13 +1,22 @@
 import React from 'react';
-import { Star, MapPin, Clock, Phone, Salad, Flame, CakeSlice, Sparkles } from 'lucide-react';
+import { Star, MapPin, Clock, Phone, Salad, Flame, CakeSlice, Sparkles, QrCode, ExternalLink } from 'lucide-react';
 import { RestaurantData } from '../types';
 
 interface HeroBannerProps {
   restaurant: RestaurantData;
   onExploreCategory: (category: 'entradas' | 'platos_fuertes' | 'postres') => void;
+  onOpenQr?: () => void;
+  qrCodeUrl?: string;
+  tableNumber?: string;
 }
 
-export const HeroBanner: React.FC<HeroBannerProps> = ({ restaurant, onExploreCategory }) => {
+export const HeroBanner: React.FC<HeroBannerProps> = ({ 
+  restaurant, 
+  onExploreCategory,
+  onOpenQr,
+  qrCodeUrl,
+  tableNumber = 'Mesa 04'
+}) => {
   return (
     <div className="relative bg-[#1c1917] text-stone-100 overflow-hidden border-b border-stone-800">
       {/* Background Image with Architectural Overlay */}
@@ -21,7 +30,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ restaurant, onExploreCat
         <div className="absolute inset-0 bg-gradient-to-r from-[#1c1917] via-[#1c1917]/95 to-[#1c1917]/80" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
         <div className="max-w-3xl">
           {/* Status & Rating Micro Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -89,6 +98,55 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ restaurant, onExploreCat
               <CakeSlice className="w-3.5 h-3.5 text-[#a83b24] group-hover:text-white" />
               <span>Postres</span>
             </button>
+          </div>
+        </div>
+
+        {/* QR Code Card - Top Right */}
+        <div 
+          onClick={onOpenQr}
+          className="shrink-0 self-center lg:self-start bg-stone-900/90 hover:bg-stone-900 border border-stone-700 hover:border-[#a83b24] rounded-sm p-4 text-center transition-all cursor-pointer shadow-xl group max-w-xs w-full sm:w-auto"
+          title="Haz clic para ampliar, imprimir o descargar el código QR"
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-stone-800 pb-2.5 mb-3">
+            <div className="flex items-center gap-1.5 text-left">
+              <div className="w-6 h-6 rounded-xs bg-[#a83b24] text-white flex items-center justify-center">
+                <QrCode className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-serif-title font-bold text-xs text-white block leading-none">
+                  Código QR
+                </span>
+                <span className="text-[10px] text-stone-400 block mt-0.5">
+                  Menú Digital
+                </span>
+              </div>
+            </div>
+            <span className="px-1.5 py-0.5 rounded-xs text-[10px] font-bold bg-[#a83b24]/20 text-[#fca5a5] border border-[#a83b24]/30">
+              {tableNumber}
+            </span>
+          </div>
+
+          <div className="bg-white p-2.5 rounded-xs inline-block shadow-inner mx-auto group-hover:shadow-md transition-shadow">
+            {qrCodeUrl ? (
+              <img
+                src={qrCodeUrl}
+                alt="Código QR del Menú"
+                className="w-32 h-32 sm:w-36 sm:h-36 object-contain"
+              />
+            ) : (
+              <div className="w-32 h-32 sm:w-36 sm:h-36 flex flex-col items-center justify-center text-stone-400">
+                <QrCode className="w-8 h-8 animate-pulse text-stone-400" />
+                <span className="text-[10px] mt-1">Cargando QR...</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-[11px] text-stone-300 font-medium mt-2.5 leading-snug">
+            Apunta con tu cámara para pedir
+          </p>
+          <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#fca5a5] group-hover:text-white transition-colors">
+            <span>Ver opciones / Imprimir</span>
+            <ExternalLink className="w-3 h-3" />
           </div>
         </div>
       </div>

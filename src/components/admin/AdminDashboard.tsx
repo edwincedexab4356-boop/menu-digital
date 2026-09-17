@@ -23,7 +23,8 @@ import {
   DollarSign,
   Receipt,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  QrCode
 } from 'lucide-react';
 import { MenuItem } from '../../types';
 import { Sale, Gasto } from '../../types/finance';
@@ -38,6 +39,7 @@ import { ExpensesView } from './ExpensesView';
 import { FinanceAnalyticsView } from './FinanceAnalyticsView';
 import { SaleModal } from './SaleModal';
 import { GastoModal } from './GastoModal';
+import { QrCodeModal } from '../QrCodeModal';
 import { setProductAvailability, updateProduct } from '../../services/adminProducts';
 import { useFirestoreCategories } from '../../services/adminCategories';
 import { subscribeToSales, subscribeToExpenses } from '../../services/adminFinance';
@@ -120,6 +122,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<Gasto | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Notifications & toggles
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -446,6 +449,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Ver Menú Público</span>
               <span className="md:hidden">Menú</span>
+            </button>
+
+            {/* Quick QR Code shortcut */}
+            <button
+              id="admin-qr-top-btn"
+              onClick={() => setIsQrModalOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xs border border-stone-300 text-stone-700 bg-white hover:bg-stone-50 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              title="Ver, descargar o imprimir código QR del menú"
+            >
+              <QrCode className="w-3.5 h-3.5 text-[#a83b24]" />
+              <span className="hidden sm:inline">Código QR</span>
             </button>
 
             {/* Top Logout Button */}
@@ -905,6 +919,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         gastoToEdit={expenseToEdit}
         onSuccess={(msg) => showToast(msg, 'success')}
         userEmail={userEmail}
+      />
+
+      {/* QR Code Modal for Printing and Sharing */}
+      <QrCodeModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        restaurantName="Delicias Belgi"
       />
     </div>
   );

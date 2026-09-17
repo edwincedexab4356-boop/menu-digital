@@ -7,6 +7,8 @@ import { ItemDetailModal } from './components/ItemDetailModal';
 import { OrderDrawer } from './components/OrderDrawer';
 import { RestaurantInfoModal } from './components/RestaurantInfoModal';
 import { TableSelectorModal } from './components/TableSelectorModal';
+import { QrCodeModal } from './components/QrCodeModal';
+import { generateMenuQrCode } from './utils/qrGenerator';
 import { restaurantInfo } from './data/menuData';
 import { useFirestoreProducts } from './services/firestoreMenu';
 import { useFirestoreCategories } from './services/adminCategories';
@@ -88,6 +90,11 @@ export default function App() {
 
   const [tableNumber, setTableNumber] = useState<string>(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const mesa = params.get('mesa');
+        if (mesa) return decodeURIComponent(mesa);
+      }
       return localStorage.getItem('delicias_belgi_table') || 'Mesa 04';
     } catch {
       return 'Mesa 04';
@@ -97,12 +104,28 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [isSeeding, setIsSeeding] = useState(false);
 
-  // Sync cart to localStorage
+  // Generate QR Code URL for the current table and origin
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const base = `${window.location.origin}${window.location.pathname.replace(/\/admin.*$/, '')}`;
+    const target = tableNumber ? `${base}?mesa=${encodeURIComponent(tableNumber)}` : base;
+    generateMenuQrCode(target).then((url) => {
+      if (url) setQrCodeDataUrl(url);
+    });
+  }, [tableNumber]);
+
+  // Sync cart to localStorage (isolated strictly to this client device)
   useEffect(() => {
     try {
-      localStorage.setItem('delicias_belgi_cart', JSON.stringify(cart));
+      if (cart.length > 0) {
+        localStorage.setItem('delicias_belgi_cart', JSON.stringify(cart));
+      } else {
+        localStorage.removeItem('delicias_belgi_cart');
+      }
     } catch {
       // ignore
     }
@@ -240,6 +263,11 @@ export default function App() {
 
   const handleClearCart = () => {
     setCart([]);
+    try {
+      localStorage.removeItem('delicias_belgi_cart');
+    } catch {
+      // ignore
+    }
   };
 
   const totalCartCount = cart.reduce((acc, ci) => acc + ci.quantity, 0);
@@ -263,6 +291,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenInfo={() => setIsInfoOpen(true)}
         onChangeTable={() => setIsTableModalOpen(true)}
+        onOpenQr={() => setIsQrOpen(true)}
         onNavigateToAdmin={navigateToAdmin}
       />
 
@@ -274,6 +303,9 @@ export default function App() {
           const el = document.getElementById('menu-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
+        onOpenQr={() => setIsQrOpen(true)}
+        qrCodeUrl={qrCodeDataUrl}
+        tableNumber={tableNumber}
       />
 
       {/* Sticky Categories & Dietary Filter Navigation */}
@@ -686,6 +718,14 @@ export default function App() {
         onClose={() => setIsTableModalOpen(false)}
         currentTable={tableNumber}
         onSelectTable={setTableNumber}
+      />
+
+      {/* QR Code Modal for Menu & Table */}
+      <QrCodeModal
+        isOpen={isQrOpen}
+        onClose={() => setIsQrOpen(false)}
+        restaurantName={restaurantInfo.name}
+        currentTable={tableNumber}
       />
     </div>
   );

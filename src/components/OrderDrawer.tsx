@@ -67,12 +67,22 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
       setOrderTicketNumber(orderId);
       setOrderSent(true);
+      // Vaciar el carrito del dispositivo inmediatamente después del envío exitoso
+      onClearCart();
 
       console.log('Pedido enviado correctamente:', orderId);
     } catch (error) {
       console.error('No se pudo enviar el pedido:', error);
       alert('No se pudo enviar el pedido. Intenta nuevamente.');
     }
+  };
+
+  const handleClose = () => {
+    if (orderSent) {
+      setOrderSent(false);
+      setOrderTicketNumber('');
+    }
+    onClose();
   };
 
   const handleReset = () => {
@@ -83,7 +93,10 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#1c1917]/70 backdrop-blur-xs animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 flex justify-end bg-[#1c1917]/70 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={handleClose}
+    >
       <div 
         className="w-full max-w-md bg-white text-stone-900 h-full flex flex-col shadow-2xl border-l border-stone-300"
         onClick={(e) => e.stopPropagation()}
@@ -106,7 +119,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
           <button
             id="close-order-drawer"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-sm hover:bg-stone-200/60 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
             aria-label="Cerrar pedido"
           >

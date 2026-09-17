@@ -1,5 +1,5 @@
 import React from 'react';
-import { UtensilsCrossed, ShoppingBag, MapPin, Clock, Phone, Sparkles, Info } from 'lucide-react';
+import { UtensilsCrossed, ShoppingBag, MapPin, Clock, Phone, Sparkles, Info, QrCode } from 'lucide-react';
 import { RestaurantData } from '../types';
 
 interface NavbarProps {
@@ -9,6 +9,7 @@ interface NavbarProps {
   onOpenCart: () => void;
   onOpenInfo: () => void;
   onChangeTable: () => void;
+  onOpenQr: () => void;
   onNavigateToAdmin?: () => void;
 }
 
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCart,
   onOpenInfo,
   onChangeTable,
+  onOpenQr,
   onNavigateToAdmin,
 }) => {
   return (
@@ -71,6 +73,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-label="Información del restaurante"
             >
               <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+
+            {/* QR Code Trigger Button */}
+            <button
+              id="navbar-qr-btn"
+              onClick={onOpenQr}
+              className="flex items-center space-x-1.5 px-2.5 py-2 rounded-sm bg-stone-50 hover:bg-stone-100 text-stone-800 border border-stone-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer group shadow-2xs"
+              title="Ver y escanear código QR del menú"
+              aria-label="Código QR del menú"
+            >
+              <QrCode className="w-4 h-4 text-[#a83b24] transition-transform group-hover:scale-110" />
+              <span className="hidden sm:inline">Código QR</span>
             </button>
 
             {/* Admin Panel Trigger */}
