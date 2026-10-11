@@ -13,6 +13,7 @@ import {
   Share2
 } from 'lucide-react';
 import { MenuItem } from '../types';
+import { getProductImage } from '../utils/productImages';
 
 interface ItemDetailModalProps {
   item: MenuItem | null;
@@ -80,24 +81,22 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
         {/* Scrollable Modal Content */}
         <div className="overflow-y-auto flex-1">
-          {/* Top Hero Photo or Fallback */}
-          <div className="relative aspect-[16/10] sm:aspect-[21/10] w-full bg-stone-100 flex items-center justify-center">
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-full object-cover object-center"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center p-6 text-stone-400">
-                <Utensils className="w-16 h-16 mb-2 opacity-50" />
-                <span className="text-xs uppercase font-bold tracking-wider text-stone-400">Delicias Belgi</span>
-              </div>
-            )}
-            {item.image && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            )}
+          {/* Top Hero Photo */}
+          <div className="relative aspect-[16/10] sm:aspect-[21/10] w-full bg-stone-100 flex items-center justify-center overflow-hidden">
+            <img
+              src={getProductImage(item.image, item.name, item.category)}
+              alt={item.name}
+              className="w-full h-full object-cover object-center"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fallback = getProductImage(null, item.name, item.category);
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
             {/* Badges on Photo */}
             <div className="absolute bottom-3 left-4 right-4 flex flex-wrap items-center justify-between gap-2">

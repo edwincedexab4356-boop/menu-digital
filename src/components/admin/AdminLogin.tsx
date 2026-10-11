@@ -56,7 +56,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
             Panel de Administración
           </h1>
           <p className="mt-1 text-sm text-[#a83b24] font-semibold tracking-wider uppercase">
-            Delicias Belgi
+            Menú Digital · Catálogo
           </p>
           <p className="mt-1 text-xs text-stone-500">
             Ingresa tus credenciales de administrador para gestionar la carta
@@ -101,7 +101,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
                     setEmail(e.target.value);
                     if (error) onClearError();
                   }}
-                  placeholder="admin@deliciasbelgi.com"
+                  placeholder="admin@menudigital.com"
                   disabled={isBusy}
                   className="block w-full pl-9 pr-3 py-2.5 bg-stone-50/50 border border-stone-300 rounded-xs text-stone-900 text-sm placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[#a83b24] focus:border-[#a83b24] transition-all disabled:opacity-50"
                 />

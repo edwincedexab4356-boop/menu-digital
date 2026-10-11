@@ -70,10 +70,11 @@ export default function App() {
     firestoreCount,
     isFirestoreConnected,
     seedSampleProducts,
+    defaultFallbackItems,
   } = useFirestoreProducts();
 
-  // Products come exclusively from Firestore; NO hardcoded fallback in menu
-  const currentMenuItems = firestoreProducts;
+  // If Firestore has saved products, use them; otherwise use sample dishes with photos
+  const currentMenuItems = firestoreProducts.length > 0 ? firestoreProducts : defaultFallbackItems;
   const isUsingRealFirestoreDocs = firestoreProducts.length > 0;
   
   // Cart / Order state
@@ -512,7 +513,7 @@ export default function App() {
                       <div className="flex items-center gap-2 mb-1">
                         <Utensils className="w-4 h-4 text-[#a83b24]" />
                         <span className="text-[11px] uppercase tracking-widest text-[#a83b24] font-bold">
-                          Colección Delicias Belgi
+                          Catálogo Digital
                         </span>
                       </div>
                       <h2 className="font-serif-title text-2xl sm:text-3xl font-bold text-stone-900">

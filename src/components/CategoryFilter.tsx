@@ -16,6 +16,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { MenuCategory, DietaryTag } from '../types';
+import { getCategoryPhoto } from '../utils/productImages';
 
 interface CategoryFilterProps {
   activeCategory: MenuCategory;
@@ -143,13 +144,22 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 key={cat.id}
                 id={`category-tab-${cat.id}`}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-sm text-xs sm:text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer border ${
+                className={`flex items-center space-x-2.5 px-3 sm:px-4 py-2 rounded-sm text-xs sm:text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer border ${
                   isActive
                     ? 'bg-[#a83b24] text-white border-[#a83b24] shadow-xs'
                     : 'bg-white text-stone-700 hover:bg-stone-50 hover:text-stone-900 border-stone-300'
                 }`}
               >
-                <span className={isActive ? 'text-white' : 'text-[#a83b24]'}>{cat.icon}</span>
+                {/* Category preview photo thumbnail */}
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-xs overflow-hidden shrink-0 border border-stone-200/60 bg-stone-100">
+                  <img
+                    src={getCategoryPhoto(cat.id)}
+                    alt={cat.label}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
                 <span>{cat.label}</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-xs font-bold ${

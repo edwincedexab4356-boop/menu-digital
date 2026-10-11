@@ -29,7 +29,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateHome }) => {
       <div className="min-h-screen bg-[#fcfbf9] flex flex-col items-center justify-center p-4">
         <Loader2 className="w-8 h-8 text-[#a83b24] animate-spin mb-3" />
         <p className="text-sm font-semibold text-stone-700">Verificando sesión administrativa...</p>
-        <p className="text-xs text-stone-400 mt-1">Delicias Belgi</p>
+        <p className="text-xs text-stone-400 mt-1">Menú Digital · Panel de Control</p>
       </div>
     );
   }

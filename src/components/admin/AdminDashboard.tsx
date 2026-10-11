@@ -41,6 +41,7 @@ import { GastoModal } from './GastoModal';
 import { setProductAvailability, updateProduct } from '../../services/adminProducts';
 import { useFirestoreCategories } from '../../services/adminCategories';
 import { subscribeToSales, subscribeToExpenses } from '../../services/adminFinance';
+import { getProductImage } from '../../utils/productImages';
 
 export type AdminTab = 
   | 'inicio' 
@@ -247,10 +248,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <h1 className="font-serif-title text-base font-bold text-white tracking-wide truncate">
-              Delicias Belgi
+              Menú Digital
             </h1>
             <p className="text-[10px] uppercase tracking-widest text-[#d97706] font-bold">
-              Panel Administrativo
+              Catálogo & Control
             </p>
           </div>
         </div>
@@ -260,7 +261,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <p className="text-xs font-medium text-stone-400 truncate">
-              {userEmail || 'admin@deliciasbelgi.com'}
+              {userEmail || 'admin@menudigital.com'}
             </p>
           </div>
           <span className="text-[10px] text-stone-500 block mt-0.5">
@@ -340,7 +341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center space-x-2">
                 <Utensils className="w-5 h-5 text-[#d97706]" />
                 <span className="font-serif-title font-bold text-white text-base">
-                  Delicias Belgi
+                  Menú Digital
                 </span>
               </div>
               <button
@@ -656,18 +657,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             >
                               <td className="py-3.5 px-4">
                                 <div className="flex items-center space-x-3">
-                                  {product.image ? (
-                                    <img
-                                      src={product.image}
-                                      alt={product.name}
-                                      className="w-12 h-12 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
-                                      referrerPolicy="no-referrer"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 rounded-xs bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 shrink-0">
-                                      <ImageIcon className="w-5 h-5" />
-                                    </div>
-                                  )}
+                                  <img
+                                    src={getProductImage(product.image, product.name, product.category)}
+                                    alt={product.name}
+                                    className="w-12 h-12 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
+                                    referrerPolicy="no-referrer"
+                                    onError={(e) => {
+                                      const target = e.currentTarget;
+                                      const fallback = getProductImage(null, product.name, product.category);
+                                      if (target.src !== fallback) target.src = fallback;
+                                    }}
+                                  />
                                   <div className="min-w-0">
                                     <p className="font-bold text-stone-900 text-sm truncate max-w-[200px]">
                                       {product.name}
@@ -756,18 +756,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       return (
                         <div key={product.id} className="p-4 space-y-3">
                           <div className="flex items-start space-x-3">
-                            {product.image ? (
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="w-16 h-16 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 rounded-xs bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 shrink-0">
-                                <ImageIcon className="w-6 h-6" />
-                              </div>
-                            )}
+                            <img
+                              src={getProductImage(product.image, product.name, product.category)}
+                              alt={product.name}
+                              className="w-16 h-16 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                const fallback = getProductImage(null, product.name, product.category);
+                                if (target.src !== fallback) target.src = fallback;
+                              }}
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
                                 <h4 className="font-bold text-stone-900 text-sm truncate">

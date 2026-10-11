@@ -1,9 +1,9 @@
 import { MenuItem, RestaurantData } from '../types';
 
 export const restaurantInfo: RestaurantData = {
-  name: "Delicias Belgi",
-  subtitle: "Cocina contemporánea & brasas de autor",
-  description: "Una experiencia culinaria que celebra el producto fresco de temporada, las técnicas a la brasa y una cuidada selección de maridajes.",
+  name: "Menú Digital",
+  subtitle: "Catálogo interactivo & carta en línea",
+  description: "Explora nuestro catálogo y menú digital con la selección de productos frescos, especialidades de autor y bebidas en tiempo real.",
   rating: 4.9,
   reviewsCount: 428,
   address: "Calle 48 Este & Calle Uruguay, Bella Vista, Ciudad de Panamá",

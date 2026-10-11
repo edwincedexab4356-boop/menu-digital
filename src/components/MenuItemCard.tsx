@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Check, Clock, Flame, Star, Eye, Utensils } from 'lucide-react';
 import { MenuItem } from '../types';
+import { getProductImage } from '../utils/productImages';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -53,6 +54,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
     }
   };
 
+  const displayImage = getProductImage(item.image, item.name, item.category);
+
   if (viewMode === 'list') {
     return (
       <div
@@ -65,20 +68,20 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
         {/* Left: Thumbnail & Details */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xs overflow-hidden shrink-0 bg-stone-100 border border-stone-200 flex items-center justify-center">
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center p-2 text-stone-400 text-center">
-                <Utensils className="w-7 h-7 mb-1 opacity-60" />
-                <span className="text-[9px] uppercase font-bold text-stone-400">Sin foto</span>
-              </div>
-            )}
+            <img
+              src={displayImage}
+              alt={item.name}
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fallback = getProductImage(null, item.name, item.category);
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
+            />
             {item.tags?.includes('Chef') && (
               <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded-xs text-[9px] font-bold uppercase tracking-wider bg-[#a83b24] text-white shadow-xs">
                 Chef
@@ -200,25 +203,23 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
     >
       {/* Top Media: Dish Photo or Fallback */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-stone-100">
-        {item.image ? (
-          <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-stone-400">
-            <Utensils className="w-10 h-10 mb-1 opacity-50" />
-            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">Delicias Belgi</span>
-          </div>
-        )}
+        <img
+          src={displayImage}
+          alt={item.name}
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            const target = e.currentTarget;
+            const fallback = getProductImage(null, item.name, item.category);
+            if (target.src !== fallback) {
+              target.src = fallback;
+            }
+          }}
+        />
 
         {/* Subtle Bottom Scrim for text readability */}
-        {item.image && (
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent" />
-        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent" />
 
         {/* Top Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">

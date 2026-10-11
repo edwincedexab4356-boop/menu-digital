@@ -18,6 +18,7 @@ import {
 import { MenuItem } from '../../types';
 import { Sale, SaleItem, MetodoPago } from '../../types/finance';
 import { createSale, updateSale } from '../../services/adminFinance';
+import { getProductImage } from '../../utils/productImages';
 
 interface SaleModalProps {
   isOpen: boolean;
@@ -367,11 +368,21 @@ export const SaleModal: React.FC<SaleModalProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  items.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-stone-50/50">
-                      <td className="py-2 px-3 font-semibold text-stone-900">
-                        {item.nombre}
-                      </td>
+                  items.map((item, idx) => {
+                    const prod = products.find((p) => p.id === item.productoId);
+                    const prodImg = getProductImage(prod?.image, item.nombre, item.categoria);
+                    return (
+                      <tr key={idx} className="hover:bg-stone-50/50">
+                        <td className="py-2 px-3 font-semibold text-stone-900">
+                          <div className="flex items-center space-x-2">
+                            <img
+                              src={prodImg}
+                              alt={item.nombre}
+                              className="w-7 h-7 rounded-xs object-cover border border-stone-200 shrink-0"
+                            />
+                            <span className="truncate max-w-[180px]">{item.nombre}</span>
+                          </div>
+                        </td>
                       <td className="py-2 px-3 text-center">
                         <input
                           type="number"
@@ -398,8 +409,9 @@ export const SaleModal: React.FC<SaleModalProps> = ({
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
+                  );
+                })
+              )}
               </tbody>
               {items.length > 0 && (
                 <tfoot>

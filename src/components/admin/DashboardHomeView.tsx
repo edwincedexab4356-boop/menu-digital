@@ -131,7 +131,7 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
             </span>
           </div>
           <h2 className="font-serif-title text-2xl sm:text-3xl font-bold">
-            Delicias Belgi · Control General
+            Menú Digital · Control General
           </h2>
           <p className="text-xs text-stone-400 mt-1 max-w-xl">
             Gestiona la carta, registra consumos, monitorea gastos operativos y consulta la ganancia neta en tiempo real con Cloud Firestore.

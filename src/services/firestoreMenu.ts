@@ -3,6 +3,7 @@ import { collection, onSnapshot, getDocs, doc, setDoc } from 'firebase/firestore
 import { db } from '../firebase.js';
 import { MenuItem } from '../types';
 import { menuItems as defaultMenuItems } from '../data/menuData';
+import { getProductImage } from '../utils/productImages';
 
 /**
  * Normalizes any category string from Firestore into standard categories or preserves custom ones
@@ -54,8 +55,9 @@ export function mapDocToMenuItem(id: string, data: Record<string, any>): MenuIte
   // 4. Categoría
   const category = normalizeCategory(data.categoria || data.category);
 
-  // 5. Imagen si existe
-  const image = data.imagen || data.image || data.foto || data.url || data.photo || undefined;
+  // 5. Imagen siempre garantizada y apetitosa
+  const rawImage = data.imagen || data.image || data.foto || data.url || data.photo || undefined;
+  const image = getProductImage(rawImage, name, category);
 
   // 6. Estado disponible / no disponible
   let available = true;

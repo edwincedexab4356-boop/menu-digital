@@ -39,11 +39,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {restaurant.name}
                 </span>
                 <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-[#a83b24] border border-rose-200/80">
-                  Menú Digital
+                  Catálogo Online
                 </span>
               </div>
               <p className="text-xs text-stone-500 hidden sm:block font-normal truncate">
-                {restaurant.subtitle || 'Heladería, Dulcería & Repostería Artesanal'}
+                {restaurant.subtitle || 'Catálogo interactivo & carta en línea'}
               </p>
             </div>
           </div>

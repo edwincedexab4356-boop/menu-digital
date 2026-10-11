@@ -13,6 +13,7 @@ import { MenuItem } from '../../types';
 import { ProductFormData, createProduct, updateProduct } from '../../services/adminProducts';
 import { CategoryItem } from '../../services/adminCategories';
 import { uploadProductImage } from '../../services/imageUpload';
+import { FOOD_PRESETS } from '../../utils/productImages';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [disponible, setDisponible] = useState(true);
 
   // File Upload states
-  const [uploadMode, setUploadMode] = useState<'upload' | 'url'>('upload');
+  const [uploadMode, setUploadMode] = useState<'upload' | 'url' | 'preset'>('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
@@ -337,24 +338,36 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 Fotografía del Producto
               </label>
 
-              {/* Selector de modo: Subir archivo vs URL */}
+              {/* Selector de modo: Subir archivo vs URL vs Galería */}
               <div className="flex bg-stone-200 p-0.5 rounded-xs text-xs">
                 <button
                   type="button"
                   onClick={() => setUploadMode('upload')}
-                  className={`px-2.5 py-1 rounded-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                  className={`px-2 py-1 rounded-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
                     uploadMode === 'upload'
                       ? 'bg-white text-stone-900 shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
-                  <span>Subir desde mis archivos</span>
+                  <span>Subir foto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('preset')}
+                  className={`px-2 py-1 rounded-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                    uploadMode === 'preset'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Galería sugerida</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setUploadMode('url')}
-                  className={`px-2.5 py-1 rounded-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                  className={`px-2 py-1 rounded-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
                     uploadMode === 'url'
                       ? 'bg-white text-stone-900 shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -430,6 +443,46 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     </div>
                   </div>
                 )}
+              </div>
+            ) : uploadMode === 'preset' ? (
+              /* Galería sugerida con 1 clic */
+              <div className="space-y-2">
+                <p className="text-xs text-stone-500">
+                  Selecciona una imagen profesional para tu platillo con un solo clic:
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto p-1 bg-white border border-stone-200 rounded-xs">
+                  {FOOD_PRESETS.map((preset) => {
+                    const isSelected = imagen === preset.url;
+                    return (
+                      <div
+                        key={preset.id}
+                        onClick={() => setImagen(preset.url)}
+                        className={`relative rounded-xs overflow-hidden border cursor-pointer group transition-all ${
+                          isSelected
+                            ? 'border-[#a83b24] ring-2 ring-[#a83b24]/40'
+                            : 'border-stone-200 hover:border-stone-400'
+                        }`}
+                      >
+                        <div className="aspect-[4/3] w-full overflow-hidden bg-stone-100">
+                          <img
+                            src={preset.url}
+                            alt={preset.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="p-1.5 bg-stone-900/90 text-white text-[10px] truncate font-medium">
+                          {preset.name}
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 bg-[#a83b24] text-white p-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               /* URL directa */

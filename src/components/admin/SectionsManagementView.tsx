@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { MenuItem } from '../../types';
 import { CategoryItem } from '../../services/adminCategories';
+import { getProductImage } from '../../utils/productImages';
 
 interface SectionsManagementViewProps {
   categories: CategoryItem[];
@@ -338,18 +339,17 @@ export const SectionsManagementView: React.FC<SectionsManagementViewProps> = ({
                     <tr key={product.id} className="hover:bg-stone-50/60">
                       <td className="py-2.5 px-3">
                         <div className="flex items-center space-x-2.5">
-                          {product.image ? (
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-8 h-8 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-xs bg-stone-100 flex items-center justify-center text-stone-400 shrink-0">
-                              <Package className="w-3.5 h-3.5" />
-                            </div>
-                          )}
+                          <img
+                            src={getProductImage(product.image, product.name, product.category)}
+                            alt={product.name}
+                            className="w-8 h-8 rounded-xs object-cover border border-stone-200 shrink-0 bg-stone-100"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              const fallback = getProductImage(null, product.name, product.category);
+                              if (target.src !== fallback) target.src = fallback;
+                            }}
+                          />
                           <span className="font-bold text-stone-900 truncate max-w-[200px]">
                             {product.name}
                           </span>
